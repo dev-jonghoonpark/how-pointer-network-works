@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointer Networks — 어텐션으로 입력을 가리키기</title>
+<meta name="description" content="Pointer Networks(Vinyals·Fortunato·Jaitly, NeurIPS 2015)를 브라우저에서 직접 실험하며 이해하기. 출력 사전이 고정된 seq2seq의 한계, 볼록 껍질·TSP처럼 답이 입력의 번호인 문제, 어텐션을 섞지 않고 가리키게 바꾼 한 줄, 브라우저에서 학습하는 미니 Ptr-Net, 길이 일반화와 마스크, 논문 결과, pointer-generator까지 다루는 인터랙티브 교육 자료.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --surface-1:#fcfcfb;
+  --page:#f9f9f7;
+  --text-primary:#0b0b0b;
+  --text-secondary:#52514e;
+  --muted:#898781;
+  --grid:#e1e0d9;
+  --axis:#c3c2b7;
+  --border:rgba(11,11,11,0.10);
+  --s1:#2a78d6;
+  --s2:#eb6834;
+  --s3:#1baf7a;
+  --s4:#8b5cf6;
+  --s8:#e34948;
+  --warn:#fab219;
+  --good:#0ca30c;
+  --wash:rgba(42,120,214,0.08);
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-1:#1a1a19;
+  --page:#0d0d0d;
+  --text-primary:#ffffff;
+  --text-secondary:#c3c2b7;
+  --muted:#898781;
+  --grid:#2c2c2a;
+  --axis:#383835;
+  --border:rgba(255,255,255,0.10);
+  --s1:#3987e5;
+  --s2:#d95926;
+  --s3:#199e70;
+  --s4:#a78bfa;
+  --s8:#e66767;
+  --warn:#fab219;
+  --good:#0ca30c;
+  --wash:rgba(57,135,229,0.14);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
+body{
+  margin:0; background:var(--page); color:var(--text-primary);
+  font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  font-size:16px; line-height:1.75; letter-spacing:-0.01em;
+}
+.wrap{max-width:880px;margin:0 auto;padding:0 16px 120px}
+header.hero{padding:56px 0 28px;border-bottom:1px solid var(--border);margin-bottom:8px}
+h1{font-size:clamp(28px,5.2vw,42px);line-height:1.25;margin:0 0 12px;letter-spacing:-0.03em}
+.sub{color:var(--text-secondary);font-size:17px;margin:0}
+.kicker{font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 10px}
+h2{font-size:clamp(21px,3.4vw,27px);margin:56px 0 6px;letter-spacing:-0.02em;line-height:1.3}
+h3{font-size:18px;margin:34px 0 6px;letter-spacing:-0.015em}
+p{margin:12px 0}
+ul,ol{margin:12px 0;padding-left:22px}
+li{margin:6px 0}
+strong{font-weight:650}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.9em;background:var(--wash);padding:1px 5px;border-radius:4px}
+a{color:var(--s1)}
+.demo{background:var(--surface-1);border:1px solid var(--border);border-radius:14px;padding:18px;margin:24px 0}
+.demo h4{margin:0 0 2px;font-size:15px;color:var(--text-primary);font-weight:650}
+.demo .cap{color:var(--muted);font-size:13px;margin:0 0 14px;line-height:1.6}
+canvas{display:block;width:100%;border-radius:8px;background:var(--surface-1);touch-action:none}
+.ctrls{display:flex;flex-wrap:wrap;gap:14px 22px;margin:14px 0 4px;align-items:flex-end}
+.ctrl{flex:1 1 210px;min-width:170px}
+.ctrl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--text-secondary);margin-bottom:4px;gap:10px}
+.ctrl label b{font-variant-numeric:tabular-nums;color:var(--text-primary);font-weight:650;font-size:13px}
+input[type=range]{width:100%;accent-color:var(--s1);height:22px;margin:0}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+button{font:inherit;font-size:13px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--border);background:var(--surface-1);color:var(--text-primary);transition:background .12s}
+button:hover{background:var(--wash)}
+button[aria-pressed=true]{background:var(--wash);border-color:var(--s1)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--text-secondary);margin:10px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.readout{display:flex;flex-wrap:wrap;gap:8px 26px;margin-top:12px;font-size:13px;color:var(--text-secondary)}
+.readout b{display:block;font-size:19px;color:var(--text-primary);font-weight:650;line-height:1.3;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.eq{background:var(--surface-1);border:1px solid var(--border);border-left:3px solid var(--s1);
+  border-radius:0 10px 10px 0;padding:14px 18px;margin:18px 0;overflow-x:auto;text-align:center}
+.eq .note{display:block;font-size:12.5px;color:var(--muted);margin:6px 0 0;line-height:1.55;text-align:left}
+.tw{overflow-x:auto;margin:18px 0;border:1px solid var(--border);border-radius:12px;background:var(--surface-1)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--border);vertical-align:middle}
+th{font-weight:650;font-size:12.5px;color:var(--text-secondary);background:var(--page)}
+tr:last-child td{border-bottom:none}
+td.num,th.num{font-variant-numeric:tabular-nums;text-align:right}
+td.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+.note{border-left:3px solid var(--axis);padding:2px 0 2px 16px;margin:18px 0;color:var(--text-secondary);font-size:14.5px}
+.key{border:1px solid var(--border);border-left:3px solid var(--s2);background:var(--surface-1);
+  border-radius:0 10px 10px 0;padding:14px 18px;margin:20px 0}
+.key .lbl{font-size:11.5px;font-weight:700;letter-spacing:0.1em;color:var(--s2);display:block;margin-bottom:4px}
+.key p{margin:0}
+nav.toc{background:var(--surface-1);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin:26px 0}
+nav.toc ol{margin:6px 0 0;padding-left:20px;font-size:14.5px}
+nav.toc a{text-decoration:none;color:var(--text-primary)}
+nav.toc a:hover{color:var(--s1)}
+.q{border:1px solid var(--border);border-radius:10px;background:var(--surface-1);padding:16px 18px;margin:14px 0}
+.q h4{margin:0 0 8px;font-size:15px;color:var(--text-primary)}
+.q .opt{display:flex;gap:9px;align-items:flex-start;padding:7px 10px;border:1px solid var(--border);
+  border-radius:8px;margin:6px 0;cursor:pointer;font-size:14px;transition:border-color .12s}
+.q .opt:hover{border-color:var(--s1)}
+.q .opt input{margin-top:5px;accent-color:var(--s1)}
+.q .opt.correct{border-color:var(--good);background:rgba(12,163,12,0.08)}
+.q .opt.wrong{border-color:var(--s8);background:rgba(227,73,72,0.07)}
+.q .expl{display:none;font-size:13.5px;color:var(--text-secondary);border-left:3px solid var(--good);
+  padding:2px 0 2px 12px;margin-top:10px;line-height:1.65}
+.q .expl.bad{border-left-color:var(--s8)}
+.q .expl.show{display:block}
+.quiz-score{font-size:15px;font-weight:700;margin-top:14px}
+.tog{position:fixed;top:14px;right:14px;z-index:10;border-radius:999px;padding:7px 13px;
+  background:var(--surface-1);border:1px solid var(--border);font-size:12.5px}
+footer{margin-top:70px;padding-top:22px;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
+footer a{color:var(--text-secondary)}
+.refs{font-size:13px;color:var(--text-secondary);line-height:1.7}
+.easy{background:var(--surface-1);border:1px solid var(--border);border-left:3px solid var(--s3);border-radius:0 14px 14px 0;padding:18px 20px;margin:24px 0}
+.easy .lbl{font-size:11.5px;font-weight:700;letter-spacing:0.1em;color:var(--s3);display:block;margin-bottom:2px}
+.easy h3{margin:0 0 8px}
+.easy ol{padding-left:20px}
+.easy .big{font-size:17px;text-align:center;margin:10px 0;font-weight:650}
+.sw{display:grid;grid-template-columns:150px 1fr 64px;gap:8px 10px;align-items:center;font-size:13px;margin-top:12px}
+.sw .bar{position:relative;height:18px;background:var(--page);border:1px solid var(--border);border-radius:4px}
+.sw .bar i{position:absolute;top:0;bottom:0;border-radius:3px}
+.sw .bar:after{content:'';position:absolute;left:50%;top:-3px;bottom:-3px;border-left:1px solid var(--axis)}
+.sw b{font-variant-numeric:tabular-nums;text-align:right}
+.ok{color:var(--good);font-weight:700}
+.bad{color:var(--s8);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.chip{min-width:32px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;text-align:center;background:var(--page);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;font-weight:600;line-height:1.6;color:var(--text-secondary)}
+.chip.on{background:var(--wash);border-color:var(--s1);color:var(--s1)}
+.chip.miss{border-color:var(--s8);color:var(--s8);background:rgba(227,73,72,0.08);border-style:dashed}
+.chip.tok{color:var(--muted)}
+.rowlbl{font-size:12.5px;color:var(--text-secondary);margin:14px 0 6px;font-weight:600}
+.bars{display:grid;grid-template-columns:auto 1fr 50px;gap:5px 10px;font-size:13px;align-items:center;margin-top:10px}
+.bars .nm{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;white-space:nowrap}
+.bars .b{height:15px;background:var(--page);border:1px solid var(--border);border-radius:4px;position:relative;overflow:hidden}
+.bars .b i{position:absolute;left:0;top:0;bottom:0}
+.bars .v{font-variant-numeric:tabular-nums;text-align:right;font-size:12.5px}
+.two{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:680px){.two{grid-template-columns:minmax(0,1fr)}}
+.seqline{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.9;overflow-x:auto;white-space:nowrap;
+  background:var(--page);border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin-top:6px}
+.seqline .w{color:var(--s8);font-weight:700}
+.chk{display:inline-flex;gap:7px;align-items:center;font-size:13.5px;color:var(--text-secondary);cursor:pointer}
+.chk input{accent-color:var(--s1)}
+.fig{display:block;margin:0 auto}
+</style>
+</head>
+<body>
+<button class="tog" id="themeBtn" type="button">◐ 다크</button>
+<div class="wrap">
+<header class="hero">
+  <p class="kicker">seq2seq · 어텐션 · 조합 최적화</p>
+  <h1>Pointer Networks — 어텐션으로 입력을 가리키기</h1>
+  <p class="sub">점 10개의 볼록 껍질을 구하라고 하면 답은 “2번, 4번, 3번, 5번…” 같은 <strong>입력의 번호</strong>입니다. 그런데 seq2seq의 출력층은 칸 수가 학습할 때 정해져서, 점이 11개가 되면 “11번”이라고 말할 칸이 없습니다. Pointer Network(Vinyals·Fortunato·Jaitly, NeurIPS 2015)는 이 문제를 어텐션 한 줄을 바꿔서 풉니다. 어텐션 가중치로 인코더 상태를 섞지 않고, <strong>그 가중치 분포를 그대로 출력으로</strong> 쓰는 것입니다.</p>
+</header>
+
+<nav class="toc">
+  <strong>학습 경로</strong>
+  <ol>
+    <li><a href="#s1">출력할 칸이 미리 정해져 있다</a></li>
+    <li><a href="#s2">정답이 ‘입력의 번호’인 문제들</a></li>
+    <li><a href="#s3">어텐션을 섞지 말고 가리키게</a></li>
+    <li><a href="#s4">브라우저에서 학습하는 미니 Ptr-Net</a></li>
+    <li><a href="#s5">같은 가중치로 더 긴 입력 — 그리고 마스크</a></li>
+    <li><a href="#s6">논문 실험 결과</a></li>
+    <li><a href="#s7">그다음: 복사하는 포인터</a></li>
+    <li><a href="#s8">확인 퀴즈</a></li>
+  </ol>
+</nav>
+
+<!-- ───────── 1 ───────── -->
+<h2 id="s1">1. 출력할 칸이 미리 정해져 있다</h2>
+<p>seq2seq 디코더는 스텝마다 출력층 \(W_o\)로 점수를 만들고 softmax를 씌웁니다. 번역이라면 출력 사전은 단어 3만~5만 개쯤이고, 학습이 끝나면 바뀌지 않습니다.</p>
+<div class="eq">$$p(C_i\mid C_1,\dots,C_{i-1},\mathcal P)=\operatorname{softmax}(W_o\,d_i),\qquad W_o\in\mathbb R^{K\times h}$$
+<span class="note">K는 출력 사전의 크기입니다. 행렬 모양에 박혀 있어서 모델을 다시 만들지 않으면 바꿀 수 없습니다.</span></div>
+<p>볼록 껍질 문제로 seq2seq를 학습시키면 출력 사전은 “1번 점”부터 “n번 점”까지에 시작·끝 기호가 붙은 것이 됩니다. 논문도 이 점을 짚습니다. 출력 사전 크기가 n으로 고정되니 <strong>n마다 모델을 따로 학습해야 한다</strong>는 것입니다. 아래에서 점 개수를 바꿔 보세요. 왼쪽 모델은 점 5개로 학습한 seq2seq입니다.</p>
+
+<div class="demo">
+  <h4>데모 1 · 점이 6개가 되면 seq2seq는 ‘6번’을 말할 수 없다</h4>
+  <p class="cap">초록 선이 볼록 껍질입니다. 정답 순서는 논문처럼 껍질 위에서 번호가 가장 작은 점부터 반시계 방향으로 적습니다.</p>
+  <canvas id="c1" height="260"></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><label>입력 점 개수 n <b id="d1nv">7</b></label><input type="range" id="d1n" min="3" max="12" value="7"></div>
+  </div>
+  <div class="btns"><button id="d1new" type="button">새 점 뽑기</button></div>
+  <p class="rowlbl">정답 출력 순서</p>
+  <div class="chips" id="d1ans"></div>
+  <p class="rowlbl">seq2seq (n = 5로 학습) — 출력층의 칸</p>
+  <div class="chips" id="d1s2s"></div>
+  <p class="rowlbl">Ptr-Net — 출력 칸 = 지금 들어온 입력</p>
+  <div class="chips" id="d1ptr"></div>
+  <div class="readout">
+    <div>seq2seq가 낼 수 없는 정답 토큰<b id="d1miss">0</b></div>
+    <div>Ptr-Net 출력 분포의 칸 수<b id="d1k">8</b></div>
+  </div>
+</div>
+<p>점이 3~5개일 때도 seq2seq가 멀쩡한 것은 아닙니다. 칸이 남을 뿐, 학습 때와 길이가 다르면 인코더가 보던 입력 분포가 달라집니다. 점이 6개를 넘으면 답에 6 이상의 번호가 들어가는 순간 그 토큰은 아예 낼 수 없습니다. 빨간 점선 칸이 그런 토큰입니다.</p>
+
+<!-- ───────── 2 ───────── -->
+<h2 id="s2">2. 정답이 ‘입력의 번호’인 문제들</h2>
+<p>논문은 평면 위의 점 집합 \(\mathcal P=\{P_1,\dots,P_n\}\)을 받아 번호열 \(\mathcal C^{\mathcal P}=\{C_1,\dots,C_{m(\mathcal P)}\}\)을 내는 문제 세 개를 풉니다. 점은 모두 \([0,1]\times[0,1]\)에서 고르게 뽑았습니다.</p>
+<ul>
+  <li><strong>볼록 껍질</strong> — 모든 점을 감싸는 가장 작은 볼록 다각형의 꼭짓점. 정확한 알고리즘은 \(O(n\log n)\)입니다.</li>
+  <li><strong>들로네 삼각분할</strong> — 어떤 삼각형의 외접원 안에도 다른 점이 없는 삼각분할. 출력은 번호 세 개짜리 묶음의 나열입니다. 예: \(\{\Rightarrow,(1,2,4),(1,4,5),(1,3,5),(1,2,3),\Leftarrow\}\)</li>
+  <li><strong>외판원 문제(TSP)</strong> — 모든 도시를 한 번씩 들르고 돌아오는 가장 짧은 경로. NP-hard입니다. 학습용 정답은 \(O(2^n n^2)\)인 Held-Karp 동적 계획법으로 n = 20까지 만들었습니다.</li>
+</ul>
+<p>셋 다 출력에 새로운 값이 하나도 없습니다. 답은 늘 입력 중 무엇을 어떤 순서로 고르느냐입니다. 아래 데모는 같은 점 집합에 볼록 껍질과 TSP를 실제로 풀어서 출력 번호열을 보여 줍니다. TSP 최적해는 논문처럼 Held-Karp로 구합니다.</p>
+
+<div class="demo">
+  <h4>데모 2 · 같은 입력, 다른 번호열</h4>
+  <p class="cap">빈 곳을 누르면 점이 추가되고(최대 12개), 점을 끌면 옮겨집니다. 출력 번호열은 점을 움직일 때마다 다시 계산됩니다.</p>
+  <canvas id="c2" height="300"></canvas>
+  <div class="btns">
+    <button id="d2hull" type="button" aria-pressed="true">볼록 껍질</button>
+    <button id="d2tsp" type="button" aria-pressed="false">TSP (최적)</button>
+    <button id="d2rand" type="button">무작위 9개</button>
+    <button id="d2pop" type="button">마지막 점 지우기</button>
+  </div>
+  <p class="rowlbl" id="d2lbl">출력 번호열</p>
+  <div class="chips" id="d2seq"></div>
+  <div class="readout" id="d2read"></div>
+</div>
+<div class="note">출력을 한 줄로 쓰는 방법이 여러 가지면 학습이 흔들립니다. 그래서 논문은 표기를 하나로 정했습니다. 볼록 껍질은 “번호가 가장 작은 점부터 반시계 방향”, TSP는 “항상 1번 도시에서 출발”, 들로네는 “삼각형을 내심 좌표의 사전순으로, 각 삼각형 안의 번호는 오름차순으로” 적습니다. 들로네 쪽은 이렇게 순서를 정하지 않았을 때 결과가 나빴다고 적혀 있습니다.</div>
+
+<!-- ───────── 3 ───────── -->
+<h2 id="s3">3. 어텐션을 섞지 말고 가리키게</h2>
+<p>저자들은 처음에 볼록 껍질을 평범한 LSTM seq2seq로 풀었습니다. 그러자 껍질 위의 점이 입력 뒤쪽에 늦게 나올수록 정확도가 떨어졌습니다. 그래서 디코더가 입력 전체를 언제든 볼 수 있게 Bahdanau 어텐션을 붙였고, 성능이 크게 올랐습니다. 이때 어텐션이 어디를 보는지 들여다봤더니 <strong>입력 쪽의 정답 점을 ‘가리키고’ 있었다</strong>고 합니다. Ptr-Net은 여기서 나왔습니다.</p>
+<p>인코더 상태를 \(e_1,\dots,e_n\), 디코더 상태를 \(d_i\)라고 할 때, 논문 식 (3)의 어텐션은 이렇습니다.</p>
+<div class="eq">$$u^i_j=v^\top\tanh(W_1e_j+W_2d_i),\qquad a^i_j=\operatorname{softmax}(u^i)_j,\qquad d'_i=\sum_{j=1}^n a^i_j\,e_j$$
+<span class="note">어텐션: 점수 → 분포 → <strong>가중 평균 \(d'_i\)</strong>. \(d'_i\)를 \(d_i\)에 이어 붙여 고정 크기 출력층으로 예측합니다.</span></div>
+<p>Ptr-Net은 마지막 단계를 지웁니다.</p>
+<div class="eq" style="border-left-color:var(--s2)">$$u^i_j=v^\top\tanh(W_1e_j+W_2d_i),\qquad p(C_i\mid C_1,\dots,C_{i-1},\mathcal P)=\operatorname{softmax}(u^i)$$
+<span class="note">Ptr-Net: 점수 → 분포 → <strong>끝</strong>. 분포의 길이가 n이므로 출력 사전도 저절로 n칸이 됩니다. 다음 스텝 디코더 입력으로는 방금 고른 점의 좌표 \(P_{C_{i-1}}\)를 그대로 넣습니다.</span></div>
+<p>파라미터 \(v, W_1, W_2\)의 크기는 은닉 차원만으로 정해지고 n과 상관이 없습니다. 같은 가중치가 점 5개에도, 500개에도 그대로 쓰입니다. 끝 기호 \(\Leftarrow\)는 논문 그림 1(b)처럼 인코더 맨 앞에 특별한 자리를 하나 두고, 끝내고 싶을 때 그 자리를 가리키게 해서 처리합니다.</p>
+
+<div class="demo">
+  <h4>데모 3 · 섞으면 입력 사이 어딘가, 가리키면 입력 중 하나</h4>
+  <p class="cap">2차원 인코더 상태 e₁~e₅와 디코더 상태 d(파란 화살표)입니다. 화살표 끝을 끌어 보세요. 그림을 단순하게 하려고 점수는 내적 \(u_j=e_j\cdot d\)로 계산합니다(논문은 위의 덧셈형 점수를 씁니다). d가 길수록 분포가 뾰족해집니다.</p>
+  <div class="two">
+    <canvas id="c3" height="300"></canvas>
+    <div>
+      <div class="bars" id="d3bars"></div>
+      <div class="readout">
+        <div>어텐션 출력 d′<b id="d3blend">—</b></div>
+        <div>포인터 출력<b id="d3ptr">—</b></div>
+      </div>
+      <p class="cap" style="margin-top:10px" id="d3note"></p>
+    </div>
+  </div>
+</div>
+<div class="key"><span class="lbl">핵심</span><p>어텐션의 결과 d′는 e들의 볼록 결합이라 늘 e들이 만드는 다각형 <em>안쪽</em>에 있고, 분포가 아주 뾰족하지 않으면 어느 입력과도 같지 않습니다. 포인터는 그 분포에서 칸 하나를 고를 뿐이라 결과가 <em>반드시 입력 중 하나</em>입니다. 논문은 좌표를 직접 회귀하게 하는 방법도 언급하면서, 그러면 출력이 입력에 정확히 대응한다는 보장이 없어 긴 시퀀스에서 예측이 흐려진다고 지적합니다.</p></div>
+
+<!-- ───────── 4 ───────── -->
+<h2 id="s4">4. 브라우저에서 학습하는 미니 Ptr-Net</h2>
+<p>이제 진짜로 학습시켜 봅니다. 과제는 <strong>숫자 정렬</strong>입니다. 0~1 사이 숫자 n개를 받아 작은 것부터 차례로 가리키면 됩니다. 논문 결론에서 다음 과제로 꼽은 것이 정렬이기도 합니다.</p>
+<p>브라우저에서 몇 초 안에 돌리려고 LSTM은 빼고 포인터 부분만 남겼습니다.</p>
+<div class="eq">$$u^i_j=v^\top\tanh\big(\underbrace{A\,x_j+a_0}_{W_1e_j}+\underbrace{B\,x_{C_{i-1}}+b_0}_{W_2d_i}\big),\qquad p(C_i)=\operatorname{softmax}(u^i)$$
+<span class="note">은닉 차원 16. 인코더는 숫자 하나를 16차원으로 펴는 선형 변환이고, 디코더 상태는 “직전에 가리킨 숫자”만 봅니다(첫 스텝에는 학습되는 시작 벡터 s). 파라미터는 A·a₀·B·b₀·s·v 각 16개, 모두 96개입니다. 학습은 n = 5~10짜리 무작위 수열, 교사 강요(teacher forcing), 교차 엔트로피, Adam(학습률 0.01, 배치 32)으로 합니다.</span></div>
+<p>논문 모델의 디코더는 LSTM이라 지금까지 무엇을 골랐는지 기억합니다. 이 미니 모델은 직전 하나만 보므로, “이미 고른 위치는 다시 고르지 않는다”는 규칙을 <strong>마스크</strong>로 줄지 말지가 중요해집니다. 마스크를 켜면 이미 가리킨 위치의 점수를 \(-\infty\)로 만들어 softmax에서 뺍니다.</p>
+
+<div class="demo">
+  <h4>데모 4 · 정렬을 배우는 포인터</h4>
+  <p class="cap">아래 행렬의 행은 디코딩 스텝, 열은 입력 위치(위에 적힌 값이 입력 숫자)입니다. 칸이 진할수록 그 스텝에서 그 위치를 가리킬 확률이 높습니다. 초록 테두리가 정답, 점이 모델이 실제로 고른 위치(틀리면 빨강)입니다. 디코딩은 모델이 스스로 고른 값을 다음 입력으로 넣는 탐욕적 방식입니다.</p>
+  <div class="btns">
+    <button id="d4train" type="button">▶ 학습 시작</button>
+    <button id="d4reset" type="button">가중치 초기화</button>
+    <label class="chk"><input type="checkbox" id="d4mask" checked> 마스크 (이미 가리킨 위치 제외)</label>
+  </div>
+  <div class="readout">
+    <div>반복<b id="d4it">0</b></div>
+    <div>스텝당 손실<b id="d4loss">—</b></div>
+    <div>n = 10 수열 정답률<b id="d4acc">—</b></div>
+  </div>
+  <canvas id="c4loss" height="120" style="margin-top:10px"></canvas>
+  <div class="ctrls">
+    <div class="ctrl"><label>시험 수열 길이 n <b id="d4nv">8</b></label><input type="range" id="d4n" min="4" max="30" value="8"></div>
+  </div>
+  <div class="btns"><button id="d4new" type="button">새 수열</button></div>
+  <canvas id="c4" height="300" style="margin-top:10px"></canvas>
+  <p class="rowlbl">정답 순서 / 모델 출력</p>
+  <div class="seqline" id="d4true"></div>
+  <div class="seqline" id="d4pred"></div>
+</div>
+<p>학습 전에는 모든 칸이 비슷하게 흐립니다. 몇백 번 반복하면 행렬에 대각선 대신 <strong>정렬 순서를 따라가는 지그재그 경로</strong>가 진하게 떠오릅니다. 입력 순서는 무작위인데 경로가 하나로 이어지는 이유는, 각 행이 “지금까지 고른 것 다음으로 작은 수”를 가리키기 때문입니다.</p>
+
+<!-- ───────── 5 ───────── -->
+<h2 id="s5">5. 같은 가중치로 더 긴 입력 — 그리고 마스크</h2>
+<p>데모 4의 모델은 길이 5~10 수열만 봤습니다. 그런데 파라미터 96개 중 어느 것도 n에 묶여 있지 않으니, 길이 50짜리 수열에도 <strong>그대로</strong> 돌릴 수 있습니다. seq2seq라면 출력층이 맞지 않아 실행조차 안 되는 상황입니다. 아래 버튼은 지금 모델을 길이마다 수열 150개로 시험합니다.</p>
+
+<div class="demo">
+  <h4>데모 5 · 길이별 정답률과 ‘유효하지 않은 출력’</h4>
+  <p class="cap">파랑 = 수열 전체를 맞힌 비율, 초록 = 위치별로 맞힌 비율, 빨강 점선 = 같은 위치를 두 번 이상 가리켜 순열이 아니게 된 비율. 회색 띠가 학습 때 본 길이입니다. 다시 평가하면 직전 결과가 옅은 선으로 남습니다.</p>
+  <div class="btns">
+    <button id="d5eval" type="button">지금 모델 평가하기</button>
+  </div>
+  <canvas id="c5" height="260" style="margin-top:12px"></canvas>
+  <div class="legend">
+    <span><i style="background:var(--s1)"></i>수열 정답률</span>
+    <span><i style="background:var(--s3)"></i>위치별 정답률</span>
+    <span><i style="background:var(--s8)"></i>유효하지 않은 출력</span>
+  </div>
+  <p class="cap" style="margin-top:10px" id="d5note">데모 4에서 모델을 학습시킨 뒤 눌러 보세요.</p>
+</div>
+<p>권장 실험 순서는 이렇습니다.</p>
+<ol>
+  <li><strong>마스크를 켠 채</strong> 학습하고 평가합니다. 길이 50에서도 거의 다 맞힙니다. 마스크가 이미 고른 숫자를 지워 주므로, 모델은 매 스텝 “남은 것 중 가장 작은 수”만 찾으면 됩니다. 이 규칙에는 n이 들어 있지 않습니다.</li>
+  <li><strong>마스크를 끄고</strong> 가중치를 초기화한 뒤 다시 학습하고 평가합니다. 이번에는 “직전 숫자보다 크면서 가장 가까운 수”를 스스로 배워야 합니다. 학습 길이에서도 정답률이 떨어지고, 길이가 길어질수록 같은 숫자를 또 가리키는 출력이 급격히 늘어납니다. 숫자 사이 간격이 약 1/n로 좁아져 구분이 어려워지기 때문입니다.</li>
+</ol>
+<div class="note">논문에서도 같은 일이 있었습니다. TSP에서는 빔 서치가 <strong>유효한 경로만</strong> 고려하도록 제한했는데, 그러지 않으면 모델이 도시를 두 번 들르거나 빼먹었고 n &gt; 20에서는 10% 이상의 경우에 유효한 경로를 하나도 내지 못했다고 합니다. 반면 볼록 껍질과 들로네 실험에서는 디코더를 제한하지 않았습니다. 포인터는 “입력 중 하나”만 보장할 뿐 “각 입력을 한 번씩”까지 보장하지는 않습니다.</div>
+
+<!-- ───────── 6 ───────── -->
+<h2 id="s6">6. 논문 실험 결과</h2>
+<p>모든 실험에서 은닉 유닛 256개 또는 512개짜리 단층 LSTM을 썼고, 학습률 1.0의 SGD, 배치 128, 가중치 초기화 범위 −0.08~0.08, 기울기 L2 클리핑 2.0, 학습 쌍 100만 개였습니다. 저자들은 하이퍼파라미터 탐색을 거의 하지 않고 세 문제에 같은 설정을 썼다고 밝힙니다.</p>
+<h3>볼록 껍질 (표 1)</h3>
+<div class="tw"><table>
+<thead><tr><th>방법</th><th class="num">학습 n</th><th class="num">시험 n</th><th class="num">정확도</th><th class="num">면적 커버</th></tr></thead>
+<tbody>
+<tr><td>LSTM seq2seq</td><td class="num">50</td><td class="num">50</td><td class="num">1.9%</td><td class="num">FAIL</td></tr>
+<tr><td>+ 어텐션</td><td class="num">50</td><td class="num">50</td><td class="num">38.9%</td><td class="num">99.7%</td></tr>
+<tr><td><strong>Ptr-Net</strong></td><td class="num">50</td><td class="num">50</td><td class="num"><strong>72.6%</strong></td><td class="num">99.9%</td></tr>
+<tr><td>LSTM seq2seq</td><td class="num">5</td><td class="num">5</td><td class="num">87.7%</td><td class="num">99.6%</td></tr>
+<tr><td>Ptr-Net</td><td class="num">5–50</td><td class="num">5</td><td class="num">92.0%</td><td class="num">99.6%</td></tr>
+<tr><td>LSTM seq2seq</td><td class="num">10</td><td class="num">10</td><td class="num">29.9%</td><td class="num">FAIL</td></tr>
+<tr><td>Ptr-Net</td><td class="num">5–50</td><td class="num">10</td><td class="num">87.0%</td><td class="num">99.8%</td></tr>
+<tr><td>Ptr-Net</td><td class="num">5–50</td><td class="num">50</td><td class="num">69.6%</td><td class="num">99.9%</td></tr>
+<tr><td>Ptr-Net</td><td class="num">5–50</td><td class="num">100</td><td class="num">50.3%</td><td class="num">99.9%</td></tr>
+<tr><td>Ptr-Net</td><td class="num">5–50</td><td class="num">200</td><td class="num">22.1%</td><td class="num">99.9%</td></tr>
+<tr><td>Ptr-Net</td><td class="num">5–50</td><td class="num">500</td><td class="num">1.3%</td><td class="num">99.2%</td></tr>
+</tbody></table></div>
+<p>정확도는 다각형이 정답과 완전히 같은 비율이고, 면적 커버는 출력 다각형이 진짜 껍질 넓이의 몇 %를 덮는지입니다(출력이 자기 교차 없는 다각형일 때만 계산하고, 그런 실패가 1%를 넘으면 FAIL). 기준 모델들은 시험할 n으로 따로 학습해야 했지만, Ptr-Net은 길이 5~50을 섞어 학습한 <strong>모델 하나</strong>로 모든 줄을 채웠습니다. 학습 때 본 적 없는 n = 500에서도 면적은 99.2%를 덮습니다. 틀린 경우는 대부분 점이 일직선에 가깝게 놓인 곳이었다고 합니다.</p>
+<h3>들로네 삼각분할</h3>
+<p>n = 5에서 정확도 80.7%·삼각형 커버 93.0%, n = 10에서 22.6%·81.3%였습니다. n = 50에서는 완전히 맞힌 경우가 없었고 삼각형 커버는 52.8%였습니다.</p>
+<h3>외판원 문제 (표 2, 경로 길이 — 짧을수록 좋음)</h3>
+<div class="tw"><table>
+<thead><tr><th>n</th><th class="num">최적</th><th class="num">A1</th><th class="num">A2</th><th class="num">A3</th><th class="num">Ptr-Net</th></tr></thead>
+<tbody>
+<tr><td>5</td><td class="num">2.12</td><td class="num">2.18</td><td class="num">2.12</td><td class="num">2.12</td><td class="num">2.12</td></tr>
+<tr><td>10</td><td class="num">2.87</td><td class="num">3.07</td><td class="num">2.87</td><td class="num">2.87</td><td class="num">2.88</td></tr>
+<tr><td>50 (A1 데이터로 학습)</td><td class="num">N/A</td><td class="num">6.46</td><td class="num">5.84</td><td class="num">5.79</td><td class="num"><strong>6.42</strong></td></tr>
+<tr><td>50 (A3 데이터로 학습)</td><td class="num">N/A</td><td class="num">6.46</td><td class="num">5.84</td><td class="num">5.79</td><td class="num">6.09</td></tr>
+<tr><td>20 (5–20 학습)</td><td class="num">3.83</td><td class="num">4.24</td><td class="num">3.86</td><td class="num">3.85</td><td class="num">3.88</td></tr>
+<tr><td>25 (5–20 학습)</td><td class="num">N/A</td><td class="num">4.71</td><td class="num">4.27</td><td class="num">4.24</td><td class="num">4.30</td></tr>
+<tr><td>30 (5–20 학습)</td><td class="num">N/A</td><td class="num">5.11</td><td class="num">4.63</td><td class="num">4.60</td><td class="num">4.72</td></tr>
+<tr><td>40 (5–20 학습)</td><td class="num">N/A</td><td class="num">5.82</td><td class="num">5.27</td><td class="num">5.23</td><td class="num">5.91</td></tr>
+<tr><td>50 (5–20 학습)</td><td class="num">N/A</td><td class="num">6.46</td><td class="num">5.84</td><td class="num">5.79</td><td class="num">7.66</td></tr>
+</tbody></table></div>
+<p>A1·A2는 \(O(n^2)\) 근사 알고리즘, A3는 최적의 1.5배 이내를 보장하는 \(O(n^3)\) Christofides 알고리즘입니다. 눈여겨볼 줄이 둘 있습니다.</p>
+<ul>
+  <li><strong>A1 데이터로 학습한 n = 50</strong>: 가장 나쁜 근사 알고리즘 A1의 출력을 정답 삼아 배웠는데, 결과 경로(6.42)가 A1 자신(6.46)보다 짧습니다. 흉내 내던 알고리즘을 넘어선 것입니다.</li>
+  <li><strong>5–20으로 학습해 더 긴 n에 적용</strong>: 25에서는 거의 완벽하고 30도 괜찮지만, 40부터 무너집니다(50에서 7.66). 볼록 껍질이 학습 길이의 10배까지 버틴 것과 대조적인데, 저자들은 TSP를 푸는 알고리즘이 \(O(n\log n)\)보다 훨씬 복잡하기 때문일 수 있다고 봅니다.</li>
+</ul>
+
+<!-- ───────── 7 ───────── -->
+<h2 id="s7">7. 그다음: 복사하는 포인터</h2>
+<p>“입력을 가리킨다”는 발상은 기하 문제 밖에서 더 오래 쓰였습니다. 요약·질의응답·대화에서 자주 문제가 되는 것은 사전에 없는 단어(OOV)입니다. 사람 이름이나 지명은 원문에 있는데 출력 사전에는 없어서 <code>[UNK]</code>로 나옵니다. 포인터를 쓰면 원문 위치를 가리켜 그 단어를 <strong>복사</strong>할 수 있습니다.</p>
+<p>대표적인 형태가 See·Liu·Manning(ACL 2017)의 pointer-generator입니다. 디코더가 스텝마다 “생성할 확률” \(p_{\text{gen}}\)을 내고, 사전에서 생성하는 분포와 어텐션으로 복사하는 분포를 섞습니다.</p>
+<div class="eq">$$P(w)=p_{\text{gen}}\,P_{\text{vocab}}(w)+(1-p_{\text{gen}})\sum_{i:\,w_i=w}a_i$$
+<span class="note">두 번째 항이 Ptr-Net의 포인터입니다. 원문에 같은 단어가 여러 번 나오면 그 위치들의 어텐션이 더해집니다. 사전에 없는 단어는 \(P_{\text{vocab}}(w)=0\)이라 복사로만 나올 수 있습니다.</span></div>
+
+<div class="demo">
+  <h4>데모 6 · 생성할까, 복사할까</h4>
+  <p class="cap">요약문의 첫 단어를 고르는 스텝입니다. 원문 “Okonkwo won the Valencia marathon on Sunday”에서 Okonkwo와 Valencia(★)는 사전에 없습니다. 최종 분포의 주황은 원문에서만, 파랑은 사전에서만, 보라는 양쪽에서 확률을 받은 단어입니다. 어텐션과 사전 분포 숫자는 설명을 위해 정한 예시 값입니다.</p>
+  <div class="ctrls">
+    <div class="ctrl"><label><span>p<sub>gen</sub> (생성 확률)</span> <b id="d6pv">0.30</b></label><input type="range" id="d6p" min="0" max="100" value="30"></div>
+  </div>
+  <div class="two" style="margin-top:6px">
+    <div><p class="rowlbl">원문 어텐션 a<sub>i</sub> (복사 분포)</p><div class="bars" id="d6att"></div>
+         <p class="rowlbl">사전 분포 P<sub>vocab</sub> (생성 분포)</p><div class="bars" id="d6voc"></div></div>
+    <div><p class="rowlbl">최종 분포 P(w)</p><div class="bars" id="d6fin"></div>
+         <div class="readout"><div>고르는 단어<b id="d6pick">—</b></div></div></div>
+  </div>
+</div>
+<p>같은 계열의 연구를 몇 가지 더 꼽으면 이렇습니다.</p>
+<ul>
+  <li><strong>CopyNet</strong> (Gu 외, ACL 2016) — 생성 모드와 복사 모드의 점수를 한 softmax 안에서 함께 정규화합니다.</li>
+  <li><strong>Pointer Sentinel</strong> (Merity 외, 2016) — 언어 모델에서 최근 문맥의 단어를 가리키는 포인터와 일반 softmax를 섞습니다.</li>
+  <li><strong>Order Matters</strong> (Vinyals·Bengio·Kudlur, ICLR 2016) — 같은 저자가 숫자 정렬 같은 집합 입력 문제에서 입력·출력 순서가 학습에 미치는 영향을 다룹니다.</li>
+  <li><strong>Neural Combinatorial Optimization with RL</strong> (Bello 외, 2016) — Ptr-Net을 지도 학습 대신 강화 학습(경로 길이를 보상으로)으로 학습해, 최적해 정답 없이 TSP를 풉니다.</li>
+  <li><strong>Attention, Learn to Solve Routing Problems!</strong> (Kool 외, ICLR 2019) — 인코더를 Transformer로 바꾸고 디코더는 여전히 입력 노드를 가리키는 구조로 경로 문제를 풉니다.</li>
+</ul>
+
+<!-- ───────── 8 ───────── -->
+<h2 id="s8">8. 확인 퀴즈</h2>
+<div id="quiz"></div>
+<p class="quiz-score" id="quizScore"></p>
+
+<footer>
+<p><strong>참고 문헌</strong></p>
+<ul class="refs">
+<li>Vinyals, Fortunato, Jaitly (2015), <em>Pointer Networks</em>, NeurIPS 2015 — <a href="https://arxiv.org/abs/1506.03134" target="_blank" rel="noopener">arXiv:1506.03134</a></li>
+<li>Bahdanau, Cho, Bengio (2014), <em>Neural Machine Translation by Jointly Learning to Align and Translate</em> — <a href="https://arxiv.org/abs/1409.0473" target="_blank" rel="noopener">arXiv:1409.0473</a></li>
+<li>See, Liu, Manning (2017), <em>Get To The Point: Summarization with Pointer-Generator Networks</em>, ACL 2017 — <a href="https://arxiv.org/abs/1704.04368" target="_blank" rel="noopener">arXiv:1704.04368</a></li>
+<li>Gu, Lu, Li, Li (2016), <em>Incorporating Copying Mechanism in Sequence-to-Sequence Learning</em> — <a href="https://arxiv.org/abs/1603.06393" target="_blank" rel="noopener">arXiv:1603.06393</a></li>
+<li>Merity, Xiong, Bradbury, Socher (2016), <em>Pointer Sentinel Mixture Models</em> — <a href="https://arxiv.org/abs/1609.07843" target="_blank" rel="noopener">arXiv:1609.07843</a></li>
+<li>Vinyals, Bengio, Kudlur (2015), <em>Order Matters: Sequence to sequence for sets</em> — <a href="https://arxiv.org/abs/1511.06391" target="_blank" rel="noopener">arXiv:1511.06391</a></li>
+<li>Bello, Pham, Le, Norouzi, Bengio (2016), <em>Neural Combinatorial Optimization with Reinforcement Learning</em> — <a href="https://arxiv.org/abs/1611.09940" target="_blank" rel="noopener">arXiv:1611.09940</a></li>
+<li>Kool, van Hoof, Welling (2018), <em>Attention, Learn to Solve Routing Problems!</em> — <a href="https://arxiv.org/abs/1803.08475" target="_blank" rel="noopener">arXiv:1803.08475</a></li>
+</ul>
+<p>같은 시리즈의 <a href="https://dev-jonghoonpark.github.io/how-seq2seq-works/">How seq2seq Works</a>는 고정 길이 병목과 빔 서치를, <a href="https://dev-jonghoonpark.github.io/how-attention-works/">How Attention Works</a>는 Bahdanau 어텐션에서 Transformer까지를 다룹니다.</p>
+<p style="margin-top:18px"><a href="https://github.com/dev-jonghoonpark/how-ai-works">how-ai-works</a> 시리즈 · 모든 계산은 브라우저에서 실시간으로 이루어집니다.</p>
+</footer>
+</div>
+
+<script>
+var $=function(s){return document.querySelector(s);};
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function setup(cv){
+  var dpr=window.devicePixelRatio||1, w=cv.clientWidth, h=+cv.getAttribute('height');
+  cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); cv.style.height=h+'px';
+  var c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0);
+  c.clearRect(0,0,w,h);
+  return {c:c,w:w,h:h};
+}
+function hexA(hex,a){
+  var n=parseInt(hex.slice(1),16);
+  return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';
+}
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function f(x,d){return x.toFixed(d);}
+function chip(txt,cls){return '<span class="chip'+(cls?' '+cls:'')+'">'+txt+'</span>';}
+
+/* ══════ 기하: 볼록 껍질 · TSP ══════ */
+// 좌표는 y가 위로 증가하는 수학 좌표. 결과는 번호가 가장 작은 꼭짓점부터 반시계 방향.
+function convexHull(P){
+  var n=P.length;if(n<3)return P.map(function(_,i){return i;});
+  var idx=P.map(function(_,i){return i;}).sort(function(a,b){return P[a].x-P[b].x||P[a].y-P[b].y;});
+  function cr(o,a,b){return (P[a].x-P[o].x)*(P[b].y-P[o].y)-(P[a].y-P[o].y)*(P[b].x-P[o].x);}
+  var lo=[],up=[];
+  idx.forEach(function(i){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],i)<=0)lo.pop();lo.push(i);});
+  idx.slice().reverse().forEach(function(i){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],i)<=0)up.pop();up.push(i);});
+  var h=lo.slice(0,-1).concat(up.slice(0,-1));
+  var m=h.indexOf(Math.min.apply(null,h));return h.slice(m).concat(h.slice(0,m));
+}
+function dist(P,i,j){return Math.hypot(P[i].x-P[j].x,P[i].y-P[j].y);}
+function tourLen(P,t){var s=0;for(var i=0;i<t.length;i++)s+=dist(P,t[i],t[(i+1)%t.length]);return s;}
+// Held-Karp: 1번 도시(0)에서 출발하는 최적 경로, O(2^n n^2)
+function tspOpt(P){
+  var n=P.length;if(n<=3)return P.map(function(_,i){return i;});
+  var m=n-1,N=1<<m,INF=1e18,dp=new Float64Array(N*n).fill(INF),par=new Int8Array(N*n).fill(-1);
+  for(var j=1;j<n;j++)dp[(1<<(j-1))*n+j]=dist(P,0,j);
+  for(var S=1;S<N;S++)for(j=1;j<n;j++){
+    var cur=dp[S*n+j];if(cur>=INF)continue;
+    for(var k=1;k<n;k++){var b=1<<(k-1);if(S&b)continue;var S2=S|b,v=cur+dist(P,j,k);
+      if(v<dp[S2*n+k]){dp[S2*n+k]=v;par[S2*n+k]=j;}}}
+  var best=-1,bv=INF;for(j=1;j<n;j++){var v2=dp[(N-1)*n+j]+dist(P,j,0);if(v2<bv){bv=v2;best=j;}}
+  var t=[],S3=N-1,c=best;while(c>0){t.push(c);var p=par[S3*n+c];S3&=~(1<<(c-1));c=p;}
+  t.push(0);t.reverse();
+  if(t[1]>t[t.length-1])t=[0].concat(t.slice(1).reverse());
+  return t;
+}
+function tspGreedy(P){var n=P.length,used=[true],t=[0];for(var s=1;s<n;s++){var cur=t[t.length-1],b=-1,bd=1e9;
+  for(var j=1;j<n;j++)if(!used[j]){var d=dist(P,cur,j);if(d<bd){bd=d;b=j;}}t.push(b);used[b]=true;}return t;}
+function randPts(n,r){var a=[];for(var i=0;i<n;i++)a.push({x:0.06+0.88*r(),y:0.06+0.88*r()});return a;}
+function mapper(g,pad){return {X:function(x){return pad+x*(g.w-2*pad);},Y:function(y){return g.h-pad-y*(g.h-2*pad);},
+  ix:function(px){return (px-pad)/(g.w-2*pad);},iy:function(py){return (g.h-pad-py)/(g.h-2*pad);}};}
+function drawPts(g,M,P,hl){
+  var c=g.c;
+  P.forEach(function(p,i){var on=hl&&hl.has(i);
+    c.beginPath();c.arc(M.X(p.x),M.Y(p.y),on?6:4.5,0,7);c.fillStyle=on?css('--s3'):css('--text-secondary');c.fill();
+    c.font='600 12px system-ui';c.fillStyle=css('--text-primary');c.fillText('P'+(i+1),M.X(p.x)+7,M.Y(p.y)-7);});
+}
+function frame(g){g.c.strokeStyle=css('--grid');g.c.lineWidth=1;g.c.strokeRect(0.5,0.5,g.w-1,g.h-1);}
+
+/* ══════ 데모 1 ══════ */
+var d1seed=11,d1P=[];
+function d1gen(){d1P=randPts(+$('#d1n').value,mulberry(d1seed));}
+function drawD1(){
+  var n=+$('#d1n').value;$('#d1nv').textContent=n;if(d1P.length!==n)d1gen();
+  var g=setup($('#c1')),M=mapper(g,26),H=convexHull(d1P),c=g.c;frame(g);
+  c.beginPath();H.forEach(function(i,k){var x=M.X(d1P[i].x),y=M.Y(d1P[i].y);k?c.lineTo(x,y):c.moveTo(x,y);});c.closePath();
+  c.fillStyle=hexA(css('--s3'),0.08);c.fill();c.strokeStyle=css('--s3');c.lineWidth=2;c.stroke();
+  drawPts(g,M,d1P,new Set(H));
+  var K=5,miss=0;
+  $('#d1ans').innerHTML=chip('⇒','tok')+H.map(function(i){var bad=i+1>K;if(bad)miss++;return chip(i+1,bad?'miss':'on');}).join('')+chip('⇐','tok');
+  var s='';for(var k=1;k<=Math.max(K,n);k++){if(k<=K)s+=chip(k,H.indexOf(k-1)>=0?'on':'');else if(H.indexOf(k-1)>=0)s+=chip(k+'?','miss');}
+  $('#d1s2s').innerHTML=s+chip('⇐','tok');
+  s='';for(k=1;k<=n;k++)s+=chip('P'+k,H.indexOf(k-1)>=0?'on':'');
+  $('#d1ptr').innerHTML=s+chip('⇐','tok');
+  $('#d1miss').innerHTML=miss?'<span class="bad">'+miss+'개</span>':'0개';
+  $('#d1k').textContent=(n+1)+'칸';
+}
+$('#d1n').oninput=function(){d1gen();drawD1();};
+$('#d1new').onclick=function(){d1seed++;d1gen();drawD1();};
+
+/* ══════ 데모 2 ══════ */
+var d2P=randPts(9,mulberry(5)),d2mode='hull',d2drag=-1,d2cache=null;
+function d2solve(){
+  if(d2cache)return d2cache;
+  var r={};if(d2mode==='hull'){r.seq=convexHull(d2P);}
+  else{r.seq=tspOpt(d2P);r.len=tourLen(d2P,r.seq);r.gr=tspGreedy(d2P);r.glen=tourLen(d2P,r.gr);}
+  return d2cache=r;
+}
+function drawD2(){
+  var g=setup($('#c2')),M=mapper(g,26),c=g.c,P=d2P;frame(g);
+  if(!P.length){c.font='13px system-ui';c.fillStyle=css('--muted');c.fillText('빈 곳을 눌러 점을 추가하세요',16,24);
+    $('#d2seq').innerHTML='';$('#d2read').innerHTML='';return;}
+  var r=d2solve(),S=r.seq;
+  if(d2mode==='tsp'&&P.length>2){
+    c.setLineDash([4,4]);c.strokeStyle=hexA(css('--muted'),0.8);c.lineWidth=1.2;c.beginPath();
+    r.gr.forEach(function(i,k){var x=M.X(P[i].x),y=M.Y(P[i].y);k?c.lineTo(x,y):c.moveTo(x,y);});c.closePath();c.stroke();c.setLineDash([]);
+  }
+  if(P.length>1){c.beginPath();S.forEach(function(i,k){var x=M.X(P[i].x),y=M.Y(P[i].y);k?c.lineTo(x,y):c.moveTo(x,y);});c.closePath();
+    if(d2mode==='hull'){c.fillStyle=hexA(css('--s3'),0.08);c.fill();}
+    c.strokeStyle=d2mode==='hull'?css('--s3'):css('--s1');c.lineWidth=2;c.stroke();}
+  // 순서 번호
+  S.forEach(function(i,k){var x=M.X(P[i].x),y=M.Y(P[i].y);c.font='700 10.5px system-ui';c.fillStyle=css('--s2');c.fillText(String(k+1),x-12,y+15);});
+  drawPts(g,M,P,new Set(S));
+  $('#d2seq').innerHTML=chip('⇒','tok')+S.map(function(i){return chip(i+1,'on');}).join('')+chip('⇐','tok');
+  if(d2mode==='hull'){
+    $('#d2lbl').textContent='출력 번호열 — 볼록 껍질 (주황 숫자 = 출력 순서)';
+    $('#d2read').innerHTML='<div>입력 점<b>'+P.length+'개</b></div><div>출력 길이 m(𝒫)<b>'+S.length+'개</b></div><div>껍질 안쪽 점<b>'+(P.length-S.length)+'개</b></div>';
+  }else{
+    $('#d2lbl').textContent='출력 번호열 — TSP 최적 경로, Held-Karp (주황 숫자 = 방문 순서)';
+    $('#d2read').innerHTML='<div>최적 경로 길이<b>'+f(r.len,3)+'</b></div><div>최근접 이웃 탐욕법(점선)<b>'+f(r.glen,3)+'</b></div><div>탐욕법이 더 긴 비율<b>+'+f((r.glen/r.len-1)*100,1)+'%</b></div>';
+  }
+}
+function d2xy(e){var cv=$('#c2'),b=cv.getBoundingClientRect(),g={w:cv.clientWidth,h:+cv.getAttribute('height')},M=mapper(g,26);
+  var px=e.clientX-b.left,py=e.clientY-b.top;return {px:px,py:py,x:M.ix(px),y:M.iy(py),M:M};}
+$('#c2').addEventListener('pointerdown',function(e){
+  var q=d2xy(e),best=-1,bd=16;
+  d2P.forEach(function(p,i){var d=Math.hypot(q.M.X(p.x)-q.px,q.M.Y(p.y)-q.py);if(d<bd){bd=d;best=i;}});
+  if(best>=0){d2drag=best;this.setPointerCapture(e.pointerId);}
+  else if(d2P.length<12&&q.x>=0&&q.x<=1&&q.y>=0&&q.y<=1){d2P.push({x:q.x,y:q.y});d2cache=null;drawD2();}
+});
+$('#c2').addEventListener('pointermove',function(e){if(d2drag<0)return;var q=d2xy(e);
+  d2P[d2drag]={x:Math.max(0,Math.min(1,q.x)),y:Math.max(0,Math.min(1,q.y))};d2cache=null;drawD2();});
+$('#c2').addEventListener('pointerup',function(){d2drag=-1;});
+function d2set(m){d2mode=m;d2cache=null;$('#d2hull').setAttribute('aria-pressed',m==='hull');$('#d2tsp').setAttribute('aria-pressed',m==='tsp');drawD2();}
+$('#d2hull').onclick=function(){d2set('hull');};$('#d2tsp').onclick=function(){d2set('tsp');};
+var d2seed=5;$('#d2rand').onclick=function(){d2seed++;d2P=randPts(9,mulberry(d2seed));d2cache=null;drawD2();};
+$('#d2pop').onclick=function(){d2P.pop();d2cache=null;drawD2();};
+
+/* ══════ 데모 3 ══════ */
+var E3=[[-0.85,0.45],[0.15,0.95],[0.95,0.2],[0.45,-0.75],[-0.55,-0.65]],d3=[0.7,0.55],d3drag=false;
+function d3soft(){var u=E3.map(function(e){return 3*(e[0]*d3[0]+e[1]*d3[1]);});var mx=Math.max.apply(null,u),Z=0;
+  var a=u.map(function(v){var x=Math.exp(v-mx);Z+=x;return x;});return {u:u,a:a.map(function(x){return x/Z;})};}
+function d3map(g){var S=Math.min(g.w,g.h)/2/1.35;return {S:S,X:function(x){return g.w/2+x*S;},Y:function(y){return g.h/2-y*S;}};}
+function drawD3(){
+  var g=setup($('#c3')),c=g.c,M=d3map(g),r=d3soft(),a=r.a;frame(g);
+  c.strokeStyle=css('--grid');c.lineWidth=1;c.beginPath();c.moveTo(0,g.h/2);c.lineTo(g.w,g.h/2);c.moveTo(g.w/2,0);c.lineTo(g.w/2,g.h);c.stroke();
+  // e들이 만드는 다각형
+  c.beginPath();E3.forEach(function(e,k){k?c.lineTo(M.X(e[0]),M.Y(e[1])):c.moveTo(M.X(e[0]),M.Y(e[1]));});c.closePath();
+  c.fillStyle=hexA(css('--s2'),0.06);c.fill();c.setLineDash([3,4]);c.strokeStyle=hexA(css('--s2'),0.5);c.stroke();c.setLineDash([]);
+  var am=0;a.forEach(function(v,i){if(v>a[am])am=i;});
+  var bx=0,by=0;E3.forEach(function(e,i){bx+=a[i]*e[0];by+=a[i]*e[1];});
+  // 가중 평균으로 가는 연한 선
+  E3.forEach(function(e,i){c.strokeStyle=hexA(css('--s2'),Math.min(0.9,a[i]*1.4));c.lineWidth=1+a[i]*4;c.beginPath();
+    c.moveTo(M.X(e[0]),M.Y(e[1]));c.lineTo(M.X(bx),M.Y(by));c.stroke();});
+  E3.forEach(function(e,i){c.beginPath();c.arc(M.X(e[0]),M.Y(e[1]),5.5,0,7);c.fillStyle=css('--text-secondary');c.fill();
+    c.font='600 12.5px system-ui';c.fillStyle=css('--text-primary');c.fillText('e'+(i+1),M.X(e[0])+9,M.Y(e[1])-8);});
+  // 포인터 고리
+  c.beginPath();c.arc(M.X(E3[am][0]),M.Y(E3[am][1]),12,0,7);c.strokeStyle=css('--s1');c.lineWidth=2.5;c.stroke();
+  // d′ 마름모
+  var X=M.X(bx),Y=M.Y(by);c.beginPath();c.moveTo(X,Y-8);c.lineTo(X+8,Y);c.lineTo(X,Y+8);c.lineTo(X-8,Y);c.closePath();c.fillStyle=css('--s2');c.fill();
+  c.font='600 12px system-ui';c.fillStyle=css('--s2');c.fillText('d′',X+10,Y+14);
+  // d 화살표
+  var ox=g.w/2,oy=g.h/2,tx=M.X(d3[0]),ty=M.Y(d3[1]),ang=Math.atan2(ty-oy,tx-ox);
+  c.strokeStyle=css('--s1');c.fillStyle=css('--s1');c.lineWidth=2.5;c.beginPath();c.moveTo(ox,oy);c.lineTo(tx,ty);c.stroke();
+  c.beginPath();c.moveTo(tx,ty);c.lineTo(tx-11*Math.cos(ang-0.4),ty-11*Math.sin(ang-0.4));c.lineTo(tx-11*Math.cos(ang+0.4),ty-11*Math.sin(ang+0.4));c.fill();
+  c.beginPath();c.arc(tx,ty,6,0,7);c.fillStyle=hexA(css('--s1'),0.25);c.fill();
+  c.font='600 12.5px system-ui';c.fillStyle=css('--s1');c.fillText('d',tx+8,ty+4);
+  $('#d3bars').innerHTML=a.map(function(v,i){return '<span class="nm">a'+(i+1)+(i===am?' ◀':'')+'</span><span class="b"><i style="width:'+(v*100)+'%;background:'+(i===am?css('--s1'):hexA(css('--s1'),0.45))+'"></i></span><span class="v">'+f(v,3)+'</span>';}).join('');
+  var near=1e9;E3.forEach(function(e){near=Math.min(near,Math.hypot(e[0]-bx,e[1]-by));});
+  $('#d3blend').textContent='('+f(bx,2)+', '+f(by,2)+')';
+  $('#d3ptr').textContent=(am+1)+'번 입력 (e'+(am+1)+') · p = '+f(a[am],2);
+  $('#d3note').innerHTML='d′에서 가장 가까운 입력 e까지의 거리: <b>'+f(near,3)+'</b>. 화살표를 길게 늘려 분포를 뾰족하게 만들면 d′가 e'+(am+1)+'에 다가가지만, 확률이 정확히 1이 되기 전에는 겹치지 않습니다.';
+}
+function d3pt(e){var cv=$('#c3'),b=cv.getBoundingClientRect(),g={w:cv.clientWidth,h:+cv.getAttribute('height')},M=d3map(g);
+  return [Math.max(-1.3,Math.min(1.3,(e.clientX-b.left-g.w/2)/M.S)),Math.max(-1.3,Math.min(1.3,-(e.clientY-b.top-g.h/2)/M.S))];}
+$('#c3').addEventListener('pointerdown',function(e){d3drag=true;this.setPointerCapture(e.pointerId);d3=d3pt(e);drawD3();});
+$('#c3').addEventListener('pointermove',function(e){if(!d3drag)return;d3=d3pt(e);drawD3();});
+$('#c3').addEventListener('pointerup',function(){d3drag=false;});
+
+/* ══════ 미니 Ptr-Net ══════ */
+// u_j = v·tanh(A·x_j + a0 + q),  q = B·x_prev + b0 (첫 스텝은 학습되는 시작 벡터 s)
+var HID=16,SC=10,KEYS=['A','a0','B','b0','s','v'];
+var net,mom,vel,iter=0,lossHist=[],training=false,trainRaf=0,rng=Math.random;
+function newNet(){var r=mulberry(Date.now()&0xffff);net={};KEYS.forEach(function(k){net[k]=new Float64Array(HID).map(function(){return (r()*2-1)*0.5;});});
+  mom={};vel={};KEYS.forEach(function(k){mom[k]=new Float64Array(HID);vel[k]=new Float64Array(HID);});iter=0;lossHist=[];}
+function zeroG(){var g={};KEYS.forEach(function(k){g[k]=new Float64Array(HID);});return g;}
+function sortedIdx(x){return x.map(function(_,i){return i;}).sort(function(a,b){return x[a]-x[b];});}
+function scores(x,prev,used){ // prev: null이면 시작 스텝
+  var n=x.length,u=new Float64Array(n),hs=[],q=new Float64Array(HID);
+  for(var k=0;k<HID;k++)q[k]=prev===null?net.s[k]:net.B[k]*prev*SC+net.b0[k];
+  for(var j=0;j<n;j++){if(used&&used[j]){u[j]=-Infinity;hs.push(null);continue;}
+    var h=new Float64Array(HID),s=0;for(k=0;k<HID;k++){h[k]=Math.tanh(net.A[k]*x[j]*SC+net.a0[k]+q[k]);s+=net.v[k]*h[k];}
+    u[j]=s;hs.push(h);}
+  var mx=-Infinity;for(j=0;j<n;j++)if(u[j]>mx)mx=u[j];var Z=0,p=new Float64Array(n);
+  for(j=0;j<n;j++){p[j]=u[j]===-Infinity?0:Math.exp(u[j]-mx);Z+=p[j];}for(j=0;j<n;j++)p[j]/=Z;
+  return {p:p,hs:hs};
+}
+function seqGrad(x,mask,g){ // 교사 강요 + 교차 엔트로피, 기울기 누적
+  var n=x.length,ord=sortedIdx(x),used=mask?new Array(n).fill(false):null,L=0;
+  for(var t=0;t<n;t++){var prev=t===0?null:x[ord[t-1]],r=scores(x,prev,used),tg=ord[t];L-=Math.log(r.p[tg]+1e-12);
+    var dq=new Float64Array(HID);
+    for(var j=0;j<n;j++){var h=r.hs[j];if(!h)continue;var du=r.p[j]-(j===tg?1:0);
+      for(var k=0;k<HID;k++){g.v[k]+=du*h[k];var dz=du*net.v[k]*(1-h[k]*h[k]);g.A[k]+=dz*x[j]*SC;g.a0[k]+=dz;dq[k]+=dz;}}
+    for(k=0;k<HID;k++){if(t===0)g.s[k]+=dq[k];else{g.B[k]+=dq[k]*prev*SC;g.b0[k]+=dq[k];}}
+    if(used)used[tg]=true;}
+  return L/n;
+}
+function decode(x,mask){var n=x.length,used=mask?new Array(n).fill(false):null,out=[],P=[],prev=null;
+  for(var t=0;t<n;t++){var r=scores(x,prev,used),b=0;for(var j=1;j<n;j++)if(r.p[j]>r.p[b])b=j;
+    out.push(b);P.push(r.p);if(used)used[b]=true;prev=x[b];}
+  return {out:out,P:P};}
+function trainStep(){var g=zeroG(),B=32,L=0,mask=$('#d4mask').checked;
+  for(var b=0;b<B;b++){var n=5+Math.floor(rng()*6),x=[];for(var i=0;i<n;i++)x.push(rng());L+=seqGrad(x,mask,g);}
+  iter++;var lr=0.01,b1=0.9,b2=0.999;
+  KEYS.forEach(function(k){for(var i=0;i<HID;i++){var gi=g[k][i]/B;mom[k][i]=b1*mom[k][i]+(1-b1)*gi;vel[k][i]=b2*vel[k][i]+(1-b2)*gi*gi;
+    net[k][i]-=lr*(mom[k][i]/(1-Math.pow(b1,iter)))/(Math.sqrt(vel[k][i]/(1-Math.pow(b2,iter)))+1e-8);}});
+  return L/B;}
+function evalLen(n,T,mask,r){var ok=0,el=0,inv=0;
+  for(var i=0;i<T;i++){var x=[];for(var k=0;k<n;k++)x.push(r());var o=decode(x,mask).out,ord=sortedIdx(x),c=0;
+    for(k=0;k<n;k++)if(o[k]===ord[k])c++;if(c===n)ok++;el+=c/n;if(new Set(o).size<n)inv++;}
+  return {seq:ok/T,el:el/T,inv:inv/T};}
+
+/* ══════ 데모 4 ══════ */
+var d4x=[],d4seed=3;
+function d4gen(){var r=mulberry(d4seed),n=+$('#d4n').value;d4x=[];for(var i=0;i<n;i++)d4x.push(Math.round(r()*100)/100);
+  // 같은 값이 겹치지 않게
+  var s=new Set();d4x=d4x.map(function(v){while(s.has(v))v=Math.round((v+0.01)*100)/100%1;s.add(v);return v;});}
+function drawLoss(){
+  var g=setup($('#c4loss')),c=g.c,pl=40,pb=18;frame(g);
+  c.font='11px system-ui';c.fillStyle=css('--muted');
+  if(!lossHist.length){c.fillText('학습을 시작하면 손실 곡선이 그려집니다',pl,g.h/2);return;}
+  var mx=Math.max(0.5,Math.max.apply(null,lossHist.slice(0,20))),N=Math.max(lossHist.length,50);
+  c.strokeStyle=css('--grid');c.beginPath();[0,0.5,1].forEach(function(t){var y=8+(g.h-8-pb)*(1-t);c.moveTo(pl,y);c.lineTo(g.w-8,y);c.fillText(f(mx*t,2),6,y+4);});c.stroke();
+  c.strokeStyle=css('--s1');c.lineWidth=1.8;c.beginPath();
+  lossHist.forEach(function(v,i){var x=pl+(g.w-8-pl)*i/(N-1),y=8+(g.h-8-pb)*(1-Math.min(v,mx)/mx);i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();
+  c.fillStyle=css('--muted');c.fillText('반복 '+(lossHist.length*20),g.w-80,g.h-4);
+}
+function drawD4(){
+  $('#d4nv').textContent=$('#d4n').value;if(d4x.length!==+$('#d4n').value)d4gen();
+  var x=d4x,n=x.length,mask=$('#d4mask').checked,dec=decode(x,mask),ord=sortedIdx(x);
+  var cv=$('#c4'),cw=cv.clientWidth,top=34,left=34,cell=Math.max(8,Math.min(40,Math.floor((cw-left-6)/n)));
+  cv.setAttribute('height',top+cell*n+8);
+  var g=setup(cv),c=g.c,used=new Array(n).fill(false);
+  c.font='600 '+(cell>=30?11:9.5)+'px system-ui';c.textAlign='center';
+  for(var j=0;j<n;j++){c.fillStyle=css('--text-secondary');
+    if(cell>=26)c.fillText(f(x[j],2),left+j*cell+cell/2,top-18);
+    c.fillStyle=css('--muted');if(cell>=14||j%2===0)c.fillText(String(j+1),left+j*cell+cell/2,top-5);}
+  c.textAlign='right';
+  for(var t=0;t<n;t++){c.fillStyle=css('--muted');c.fillText(String(t+1),left-6,top+t*cell+cell/2+4);
+    for(j=0;j<n;j++){var X=left+j*cell,Y=top+t*cell,p=dec.P[t][j];
+      if(mask&&used[j]){c.fillStyle=hexA(css('--muted'),0.18);c.fillRect(X+0.5,Y+0.5,cell-1,cell-1);continue;}
+      c.fillStyle=css('--page');c.fillRect(X+0.5,Y+0.5,cell-1,cell-1);
+      c.fillStyle=hexA(css('--s1'),Math.min(1,p));c.fillRect(X+0.5,Y+0.5,cell-1,cell-1);}
+    var tg=ord[t],pk=dec.out[t];
+    c.strokeStyle=css('--good');c.lineWidth=2;c.strokeRect(left+tg*cell+1.5,top+t*cell+1.5,cell-3,cell-3);
+    c.beginPath();c.arc(left+pk*cell+cell/2,top+t*cell+cell/2,Math.max(2,cell*0.14),0,7);c.fillStyle=pk===tg?css('--text-primary'):css('--s8');c.fill();
+    if(mask)used[pk]=true;}
+  c.textAlign='left';
+  $('#d4true').innerHTML='정답: '+ord.map(function(i){return f(x[i],2);}).join('  ');
+  $('#d4pred').innerHTML='모델: '+dec.out.map(function(i,t){var s=f(x[i],2);return i===ord[t]?s:'<span class="w">'+s+'</span>';}).join('  ');
+}
+function d4read(){$('#d4it').textContent=iter;$('#d4loss').textContent=lossHist.length?f(lossHist[lossHist.length-1],3):'—';}
+function trainLoop(){
+  if(!training)return;var L=0;for(var i=0;i<20;i++)L+=trainStep();lossHist.push(L/20);
+  if(iter%200===0){var e=evalLen(10,60,$('#d4mask').checked,mulberry(99));$('#d4acc').textContent=f(e.seq*100,0)+'%';}
+  d4read();drawLoss();drawD4();
+  if(iter>=4000){stopTrain();return;}
+  trainRaf=requestAnimationFrame(trainLoop);
+}
+function stopTrain(){training=false;cancelAnimationFrame(trainRaf);$('#d4train').textContent=iter>=4000?'✓ 4,000회 완료':'▶ 학습 계속';}
+$('#d4train').onclick=function(){if(training){stopTrain();return;}if(iter>=4000)return;training=true;this.textContent='❚❚ 일시 정지';trainLoop();};
+$('#d4reset').onclick=function(){stopTrain();newNet();$('#d4train').textContent='▶ 학습 시작';$('#d4acc').textContent='—';d4read();drawLoss();drawD4();};
+$('#d4mask').onchange=function(){$('#d4reset').onclick();};
+$('#d4n').oninput=function(){d4gen();drawD4();};
+$('#d4new').onclick=function(){d4seed++;d4gen();drawD4();};
+
+/* ══════ 데모 5 ══════ */
+var LENS=[5,8,10,15,20,30,40,50],d5cur=null,d5prev=null,d5busy=false;
+function drawD5(){
+  var g=setup($('#c5')),c=g.c,pl=40,pr=12,pt=12,pb=28,W=g.w-pl-pr,H=g.h-pt-pb;frame(g);
+  function X(i){return pl+W*i/(LENS.length-1);}function Y(v){return pt+H*(1-v);}
+  c.fillStyle=hexA(css('--muted'),0.12);c.fillRect(X(0),pt,X(2)-X(0),H);
+  c.font='11px system-ui';c.strokeStyle=css('--grid');c.lineWidth=1;c.beginPath();
+  [0,0.25,0.5,0.75,1].forEach(function(v){c.moveTo(pl,Y(v));c.lineTo(g.w-pr,Y(v));c.fillStyle=css('--muted');c.fillText((v*100)+'%',4,Y(v)+4);});c.stroke();
+  c.textAlign='center';LENS.forEach(function(n,i){c.fillStyle=css('--muted');c.fillText('n='+n,X(i),g.h-9);});c.textAlign='left';
+  c.fillStyle=css('--muted');c.fillText('학습 길이',X(0)+4,pt+12);
+  function line(res,key,col,alpha,dash){var pts=res.filter(Boolean);if(!pts.length)return;
+    c.strokeStyle=hexA(col,alpha);c.lineWidth=alpha<1?1.5:2.2;c.setLineDash(dash?[5,4]:[]);c.beginPath();
+    res.forEach(function(r,i){if(!r)return;var x=X(i),y=Y(r[key]);i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();c.setLineDash([]);
+    if(alpha===1)res.forEach(function(r,i){if(!r)return;c.beginPath();c.arc(X(i),Y(r[key]),3,0,7);c.fillStyle=col;c.fill();});}
+  [[d5prev,0.28],[d5cur,1]].forEach(function(z){if(!z[0])return;var r=z[0][0];line(r,'el',css('--s3'),z[1]);line(r,'inv',css('--s8'),z[1],true);line(r,'seq',css('--s1'),z[1]);});
+}
+$('#d5eval').onclick=function(){
+  if(d5busy)return;d5busy=true;if(d5cur&&d5cur[0].every(Boolean))d5prev=d5cur;
+  var mask=$('#d4mask').checked,res=new Array(LENS.length).fill(null),r=mulberry(2024),i=0;d5cur=[res,mask];
+  $('#d5note').textContent='평가 중…';
+  (function step(){res[i]=evalLen(LENS[i],150,mask,r);i++;drawD5();
+    if(i<LENS.length){requestAnimationFrame(step);return;}
+    d5busy=false;var a=res[0],z=res[res.length-1];
+    $('#d5note').innerHTML='마스크 <b>'+(mask?'켬':'끔')+'</b>, 학습 '+iter+'회 모델 — n=5 수열 정답률 <b>'+f(a.seq*100,1)+'%</b>, n=50 수열 정답률 <b>'+f(z.seq*100,1)+'%</b>, n=50 유효하지 않은 출력 <b>'+f(z.inv*100,1)+'%</b>. 파라미터는 n과 상관없이 96개 그대로입니다.';
+  })();
+};
+
+/* ══════ 데모 6 ══════ */
+var SRC=['Okonkwo','won','the','Valencia','marathon','on','Sunday'],ATT=[0.55,0.04,0.03,0.2,0.1,0.02,0.06];
+var OOV=['Okonkwo','Valencia'];
+var VOC={'on':0.01,'runner':0.29,'[UNK]':0.25,'the':0.15,'a':0.1,'marathon':0.08,'race':0.06,'won':0.03,'Sunday':0.03};
+function bars(list,col,mxv){return list.map(function(z){return '<span class="nm">'+z[0]+'</span><span class="b"><i style="width:'+(z[1]/mxv*100)+'%;background:'+(z[2]||col)+'"></i></span><span class="v">'+f(z[1],3)+'</span>';}).join('');}
+function drawD6(){
+  var pg=+$('#d6p').value/100;$('#d6pv').textContent=f(pg,2);
+  $('#d6att').innerHTML=bars(SRC.map(function(w,i){return [w+(OOV.indexOf(w)>=0?' ★':''),ATT[i]];}),css('--s2'),1);
+  $('#d6voc').innerHTML=bars(Object.keys(VOC).map(function(w){return [w,VOC[w]];}).sort(function(a,b){return b[1]-a[1];}),css('--s1'),1);
+  var F={};Object.keys(VOC).forEach(function(w){F[w]=pg*VOC[w];});
+  SRC.forEach(function(w,i){F[w]=(F[w]||0)+(1-pg)*ATT[i];});
+  var L=Object.keys(F).map(function(w){return [w,F[w]];}).sort(function(a,b){return b[1]-a[1];});
+  L.forEach(function(z){z[2]=VOC[z[0]]===undefined?css('--s2'):(SRC.indexOf(z[0])>=0?css('--s4'):css('--s1'));});
+  $('#d6fin').innerHTML=bars(L.slice(0,9),css('--s1'),Math.max(0.3,L[0][1]));
+  var w=L[0][0];$('#d6pick').innerHTML=w+(w==='[UNK]'?' <span class="bad">(알 수 없는 단어)</span>':OOV.indexOf(w)>=0?' <span class="ok">(원문에서 복사)</span>':'');
+}
+$('#d6p').oninput=drawD6;
+
+/* ══════ 퀴즈 ══════ */
+var QZ=[
+ {q:'점 n개의 볼록 껍질을 seq2seq로 풀 때 근본적인 문제는?',o:['LSTM이 좌표를 입력으로 받을 수 없다','출력층의 칸 수가 학습 때 고정돼 n이 바뀌면 출력할 수 없는 번호가 생긴다','볼록 껍질은 정답이 하나가 아니다'],a:1,
+  e:'출력 사전 크기 K가 W_o의 모양에 박혀 있습니다. 논문은 그래서 n마다 모델을 따로 학습해야 한다고 지적합니다.'},
+ {q:'Bahdanau 어텐션과 Ptr-Net이 softmax 분포를 쓰는 방식의 차이는?',o:['어텐션은 분포로 인코더 상태를 섞어 문맥 벡터를 만들고, Ptr-Net은 분포 자체를 출력으로 쓴다','Ptr-Net은 softmax 대신 argmax만 쓴다','어텐션은 덧셈형, Ptr-Net은 내적형 점수를 쓴다'],a:0,
+  e:'점수 식 u = vᵀtanh(W₁e + W₂d)는 둘이 같습니다. Ptr-Net은 마지막의 가중 평균 단계를 지우고 분포를 그대로 p(C_i | …)로 씁니다.'},
+ {q:'입력 길이가 50에서 500으로 늘면 Ptr-Net 포인터 부분의 파라미터 수는?',o:['10배가 된다','n²에 비례해 늘어난다','그대로다'],a:2,
+  e:'v, W₁, W₂의 크기는 은닉 차원으로만 정해집니다. 그래서 길이 5~50으로 학습한 모델 하나를 n = 500에도 돌릴 수 있었습니다.'},
+ {q:'논문이 TSP에서 빔 서치를 유효한 경로만 보도록 제한한 이유는?',o:['계산 시간을 줄이려고','제한하지 않으면 도시를 반복하거나 빼먹은 출력이 나왔기 때문','Held-Karp와 같은 결과를 내려고'],a:1,
+  e:'포인터는 “입력 중 하나”만 보장합니다. n > 20에서는 제한이 없으면 10% 이상의 경우 유효한 경로를 하나도 내지 못했습니다. 데모 5에서 마스크를 끄면 같은 현상을 볼 수 있습니다.'},
+ {q:'근사 알고리즘 A1의 출력으로 학습한 Ptr-Net(n = 50)의 경로 길이는?',o:['A1보다 길다','A1보다 조금 짧다(6.42 vs 6.46)','최적해와 같다'],a:1,
+  e:'가장 약한 근사 알고리즘을 흉내 내도록 배웠는데 결과는 그 알고리즘보다 약간 더 좋았습니다.'},
+ {q:'pointer-generator에서 p_gen = 1이면 원문에만 있는 고유명사(OOV)는?',o:['복사 분포로 그대로 나온다','나올 수 없다 — 사전 분포만 남는다','[UNK]와 확률을 나눠 갖는다'],a:1,
+  e:'P(w) = p_gen·P_vocab(w) + (1−p_gen)·Σa_i 에서 복사 항이 0이 됩니다. 사전에 없는 단어는 P_vocab = 0이라 확률이 0입니다.'}
+];
+(function(){
+  var box=$('#quiz'),score=0,done=0;
+  QZ.forEach(function(it,qi){
+    var d=document.createElement('div');d.className='q';
+    d.innerHTML='<h4>Q'+(qi+1)+'. '+it.q+'</h4>'+it.o.map(function(o,oi){return '<label class="opt"><input type="radio" name="q'+qi+'" value="'+oi+'"> <span>'+o+'</span></label>';}).join('')+'<div class="expl"></div>';
+    box.appendChild(d);
+    var answered=false;
+    d.querySelectorAll('input').forEach(function(inp){inp.addEventListener('change',function(){
+      if(answered)return;answered=true;done++;var v=+inp.value,ok=v===it.a;if(ok)score++;
+      d.querySelectorAll('.opt').forEach(function(l,li){if(li===it.a)l.classList.add('correct');else if(li===v)l.classList.add('wrong');});
+      var ex=d.querySelector('.expl');ex.textContent=(ok?'정답! ':'오답. ')+it.e;ex.classList.add('show');if(!ok)ex.classList.add('bad');
+      d.querySelectorAll('input').forEach(function(x){x.disabled=true;});
+      $('#quizScore').textContent=done+'문제 중 '+score+'개 정답'+(done===QZ.length?' — 끝!':'');
+    });});
+  });
+})();
+
+/* ══════ 공통 ══════ */
+function drawAll(){drawD1();drawD2();drawD3();drawLoss();drawD4();drawD5();drawD6();}
+var tbtn=$('#themeBtn');
+if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.setAttribute('data-theme','dark');
+function syncBtn(){tbtn.textContent=document.documentElement.getAttribute('data-theme')==='dark'?'◑ 라이트':'◐ 다크';}
+tbtn.addEventListener('click',function(){var d=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',d?'light':'dark');syncBtn();drawAll();});
+newNet();d1gen();
+syncBtn();drawAll();
+var rz;window.addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(drawAll,120);});
+document.addEventListener('DOMContentLoaded',function(){
+  if(window.renderMathInElement)renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]});
+});
+window.addEventListener('load',function(){
+  if(window.renderMathInElement&&!document.querySelector('.katex'))renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]});
+});
+</script>
+</body>
+</html>
