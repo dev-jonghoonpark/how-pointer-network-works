@@ -173,11 +173,12 @@ footer a{color:var(--text-secondary)}
     <li><a href="#s1">출력할 칸이 미리 정해져 있다</a></li>
     <li><a href="#s2">정답이 ‘입력의 번호’인 문제들</a></li>
     <li><a href="#s3">어텐션을 섞지 말고 가리키게</a></li>
-    <li><a href="#s4">브라우저에서 학습하는 미니 Ptr-Net</a></li>
-    <li><a href="#s5">같은 가중치로 더 긴 입력 — 그리고 마스크</a></li>
-    <li><a href="#s6">논문 실험 결과</a></li>
-    <li><a href="#s7">그다음: 복사하는 포인터</a></li>
-    <li><a href="#s8">확인 퀴즈</a></li>
+    <li><a href="#s4">한 스텝씩 따라가기: 포인터가 다음 점을 고르는 방식</a></li>
+    <li><a href="#s5">브라우저에서 학습하는 미니 Ptr-Net</a></li>
+    <li><a href="#s6">같은 가중치로 더 긴 입력 — 그리고 마스크</a></li>
+    <li><a href="#s7">논문 실험 결과</a></li>
+    <li><a href="#s8">그다음: 복사하는 포인터</a></li>
+    <li><a href="#s9">확인 퀴즈</a></li>
   </ol>
 </nav>
 
@@ -188,7 +189,7 @@ footer a{color:var(--text-secondary)}
 
 <div class="demo">
   <h4>그림 · 고무줄이 걸린 못과 안쪽에 갇힌 못</h4>
-  <p class="cap">초록 선이 고무줄(볼록 껍질)입니다. 진한 초록 점이 꼭짓점이고, 회색 점은 껍질 안쪽에 있어 결과에 영향을 주지 않습니다. 주황 숫자는 출력 순서입니다.</p>
+  <p class="cap">초록 선이 고무줄(볼록 껍질)입니다. 진한 초록 점이 꼭짓점이고, 회색 점은 껍질 안쪽에 있어 결과에 영향을 주지 않습니다. 주황 숫자는 출력 순서입니다(⑤는 다각형을 닫으려고 P3을 한 번 더 가리키는 것).</p>
   <svg class="fig" viewBox="0 0 330 205" width="100%" style="max-width:520px" role="img" aria-label="점 7개와 그 볼록 껍질. P3, P6, P4, P5가 꼭짓점이고 P1, P2, P7은 안쪽에 있다">
     <polygon points="290,150 150,40 40,120 190,170" style="fill:var(--wash);stroke:var(--s3);stroke-width:2.5;stroke-linejoin:round"/>
     <g style="fill:var(--s3)">
@@ -202,7 +203,7 @@ footer a{color:var(--text-secondary)}
       <text x="156" y="116">P1</text><text x="211" y="124">P2</text><text x="126" y="86">P7</text>
     </g>
     <g style="fill:var(--s2);font:700 11.5px system-ui">
-      <text x="278" y="170">①</text><text x="132" y="34">②</text><text x="36" y="140">③</text><text x="172" y="188">④</text>
+      <text x="270" y="170">①⑤</text><text x="132" y="34">②</text><text x="36" y="140">③</text><text x="172" y="188">④</text>
     </g>
   </svg>
 </div>
@@ -213,11 +214,11 @@ footer a{color:var(--text-secondary)}
   <li><strong>“볼록”</strong> — 움푹 들어간 곳이 없다는 뜻입니다. 다각형 안의 어떤 두 점을 이어도 그 선분이 밖으로 나가지 않습니다. 고무줄은 팽팽하게 당겨지므로 안쪽으로 파고들 수 없습니다.</li>
 </ul>
 
-<p>이 문제의 <strong>입력</strong>은 점들의 좌표이고, <strong>출력</strong>은 껍질 꼭짓점의 번호를 둘레를 따라 적은 것입니다. 같은 껍질이라도 어느 점에서 시작해 어느 방향으로 도느냐에 따라 여러 가지로 적을 수 있어서, 논문은 “껍질 위에서 번호가 가장 작은 점부터 반시계 방향”으로 적기로 정했습니다. 그림의 답은 이렇게 됩니다.</p>
+<p>이 문제의 <strong>입력</strong>은 점들의 좌표이고, <strong>출력</strong>은 껍질 꼭짓점의 번호를 둘레를 따라 적은 것입니다. 같은 껍질이라도 어느 점에서 시작해 어느 방향으로 도느냐에 따라 여러 가지로 적을 수 있어서, 논문은 “껍질 위에서 번호가 가장 작은 점부터 반시계 방향”으로 적고, 마지막에 시작점을 한 번 더 적어 다각형을 닫기로 정했습니다(논문 그림 2(a)). 그림의 답은 이렇게 됩니다.</p>
 <div class="easy">
   <span class="lbl">그림의 정답 출력</span>
-  <p class="big">⇒ 3 → 6 → 4 → 5 ⇐</p>
-  <p style="margin:0;font-size:14.5px;color:var(--text-secondary)">⇒와 ⇐는 시작과 끝을 알리는 기호입니다. 입력은 7개인데 출력은 4개입니다. 출력 길이는 점이 어떻게 놓였느냐에 따라 매번 달라집니다.</p>
+  <p class="big">⇒ 3 → 6 → 4 → 5 → 3 ⇐</p>
+  <p style="margin:0;font-size:14.5px;color:var(--text-secondary)">⇒와 ⇐는 시작과 끝을 알리는 기호입니다. 입력은 7개인데 꼭짓점은 4개이고, 끝에 시작점 3을 한 번 더 적습니다. 출력 길이는 점이 어떻게 놓였느냐에 따라 매번 달라집니다.</p>
 </div>
 
 <p>Pointer Networks가 이 문제를 첫 과제로 고른 이유는 답의 생김새에 있습니다.</p>
@@ -237,7 +238,7 @@ footer a{color:var(--text-secondary)}
 
 <div class="demo">
   <h4>데모 1 · 점이 6개가 되면 seq2seq는 ‘6번’을 말할 수 없다</h4>
-  <p class="cap">초록 선이 볼록 껍질입니다. 정답 순서는 논문처럼 껍질 위에서 번호가 가장 작은 점부터 반시계 방향으로 적습니다.</p>
+  <p class="cap">초록 선이 볼록 껍질입니다. 정답 순서는 논문처럼 껍질 위에서 번호가 가장 작은 점부터 반시계 방향으로 적고, 끝에 시작점을 한 번 더 적어 닫습니다.</p>
   <canvas id="c1" height="260"></canvas>
   <div class="ctrls">
     <div class="ctrl"><label>입력 점 개수 n <b id="d1nv">7</b></label><input type="range" id="d1n" min="3" max="12" value="7"></div>
@@ -280,7 +281,7 @@ footer a{color:var(--text-secondary)}
   <div class="chips" id="d2seq"></div>
   <div class="readout" id="d2read"></div>
 </div>
-<div class="note">출력을 한 줄로 쓰는 방법이 여러 가지면 학습이 흔들립니다. 그래서 논문은 표기를 하나로 정했습니다. 볼록 껍질은 “번호가 가장 작은 점부터 반시계 방향”, TSP는 “항상 1번 도시에서 출발”, 들로네는 “삼각형을 내심 좌표의 사전순으로, 각 삼각형 안의 번호는 오름차순으로” 적습니다. 들로네 쪽은 이렇게 순서를 정하지 않았을 때 결과가 나빴다고 적혀 있습니다.</div>
+<div class="note">출력을 한 줄로 쓰는 방법이 여러 가지면 학습이 흔들립니다. 그래서 논문은 표기를 하나로 정했습니다. 볼록 껍질은 “번호가 가장 작은 점부터 반시계 방향, 끝에 시작점을 한 번 더”, TSP는 “항상 1번 도시에서 출발”, 들로네는 “삼각형을 내심 좌표의 사전순으로, 각 삼각형 안의 번호는 오름차순으로” 적습니다. 들로네 쪽은 이렇게 순서를 정하지 않았을 때 결과가 나빴다고 적혀 있습니다.</div>
 
 <!-- ───────── 3 ───────── -->
 <h2 id="s3">3. 어텐션을 섞지 말고 가리키게</h2>
@@ -311,7 +312,68 @@ footer a{color:var(--text-secondary)}
 <div class="key"><span class="lbl">핵심</span><p>어텐션의 결과 d′는 e들의 볼록 결합이라 늘 e들이 만드는 다각형 <em>안쪽</em>에 있고, 분포가 아주 뾰족하지 않으면 어느 입력과도 같지 않습니다. 포인터는 그 분포에서 칸 하나를 고를 뿐이라 결과가 <em>반드시 입력 중 하나</em>입니다. 논문은 좌표를 직접 회귀하게 하는 방법도 언급하면서, 그러면 출력이 입력에 정확히 대응한다는 보장이 없어 긴 시퀀스에서 예측이 흐려진다고 지적합니다.</p></div>
 
 <!-- ───────── 4 ───────── -->
-<h2 id="s4">4. 브라우저에서 학습하는 미니 Ptr-Net</h2>
+<h2 id="s4">4. 한 스텝씩 따라가기: 포인터는 다음 점을 이렇게 고른다</h2>
+<p>Ptr-Net의 디코딩은 언어 모델이 문장을 만드는 방식과 똑같습니다. 매 스텝 <strong>다음에 올 것 하나</strong>를 고르고, 방금 고른 것을 다음 스텝의 입력으로 넣고, 끝 기호를 고르면 멈춥니다. 다른 점은 고르는 후보뿐입니다.</p>
+<div class="tw"><table>
+<thead><tr><th></th><th>자연어 생성</th><th>Pointer Network</th></tr></thead>
+<tbody>
+<tr><td>매 스텝 하는 일</td><td>다음 토큰 하나 고르기</td><td>다음 점 하나 고르기</td></tr>
+<tr><td>다음 스텝 입력</td><td>방금 고른 토큰</td><td>방금 고른 점의 좌표</td></tr>
+<tr><td>끝내는 방법</td><td><code>&lt;EOS&gt;</code> 토큰 선택</td><td>끝 기호 ⇐ 자리 선택</td></tr>
+<tr><td>고르는 후보</td><td>고정된 단어 사전</td><td><strong>이번에 들어온 입력의 점들</strong></td></tr>
+</tbody></table></div>
+<p>한 스텝 안에서 일어나는 계산을 적으면 이렇습니다. 무엇이 한 번만 계산되고 무엇이 매번 바뀌는지가 핵심입니다.</p>
+<div class="eq">$$\underbrace{e_1,\dots,e_n}_{\text{인코더가 한 번만 계산}}\qquad
+d_i=\mathrm{LSTM}\big(d_{i-1},\;\underbrace{P_{C_{i-1}}}_{\text{직전에 고른 점}}\big)\qquad
+u^i_j=v^\top\tanh(W_1e_j+W_2d_i)\qquad p=\operatorname{softmax}(u^i)$$
+<span class="note">후보 점들의 벡터 \(e_j\)는 처음에 만들어진 뒤 끝까지 그대로입니다. 매 스텝 바뀌는 것은 질의(query) 역할을 하는 디코더 상태 \(d_i\) 하나뿐입니다. 그래서 “직전에 무엇을 골랐느냐에 따라 다음 선택이 달라지는” 효과는 전부 \(d_i\)를 통해 들어옵니다. 학습할 때는 모델이 실제로 고른 점 대신 <strong>정답의 직전 점</strong>을 넣습니다(교사 강요).</span></div>
+<p>0절 그림의 점 7개로 실제 순서를 따라가 봅니다. 후보는 끝 기호 ⇐ 자리까지 8칸입니다. 볼록 껍질은 답의 길이가 입력마다 다르기 때문에, 언제 멈출지도 모델이 골라야 합니다.</p>
+
+<div class="demo">
+  <h4>데모 4 · 볼록 껍질을 한 스텝씩 디코딩하기</h4>
+  <p class="cap">원의 크기와 숫자가 그 스텝에서 각 후보를 가리킬 확률입니다. 주황 선은 지금까지 출력한 순서입니다. 확률은 학습이 잘된 모델이라면 이런 모양이 나온다는 것을 보이려고 정한 <strong>예시 값</strong>입니다.</p>
+  <div class="btns">
+    <button id="d4first" type="button">⏮ 처음</button>
+    <button id="d4prev" type="button">◀ 이전</button>
+    <button id="d4next" type="button">다음 스텝 ▶</button>
+    <label class="chk"><input type="checkbox" id="d4mask"> 마스크 적용 (후속 연구 방식)</label>
+  </div>
+  <div class="readout">
+    <div>스텝<b id="d4step">1 / 6</b></div>
+    <div>디코더 입력<b id="d4in">⇒</b></div>
+    <div>이번 선택<b id="d4pick">P3</b></div>
+  </div>
+  <div class="two" style="margin-top:12px">
+    <canvas id="c4" height="260"></canvas>
+    <div class="bars" id="d4bars"></div>
+  </div>
+  <p class="rowlbl">지금까지의 출력</p>
+  <div class="chips" id="d4out"></div>
+  <p class="cap" style="margin-top:12px;font-size:14px;color:var(--text-secondary)" id="d4note"></p>
+</div>
+
+<h3>P1, P2, P7은 어떻게 빠지는가</h3>
+<p>스텝을 끝까지 넘겨 보면 P1, P2, P7은 <strong>무언가에 의해 지워지는 것이 아니라, 여섯 스텝 내내 후보로 남아 있지만 한 번도 뽑히지 않습니다</strong>. 마스크를 켜도 이 점들은 지워지지 않습니다. 마스크는 이미 고른 점만 지우기 때문입니다.</p>
+<p>이 점들의 확률이 매번 낮게 나오는 것은 모델이 그렇게 배웠기 때문입니다. 학습 데이터 100만 개의 정답에는 안쪽 점이 한 번도 나오지 않습니다. 그래서 모델은 “다른 점들에 둘러싸인 점에는 낮은 점수를 준다”는 판단을 \(W_1, W_2, v\)와 인코더 가중치에 새겨 넣습니다. 꼭짓점을 다 돌고 시작점으로 돌아왔다고 판단하면 안쪽 점 대신 ⇐에 높은 점수를 줍니다.</p>
+<div class="tw"><table>
+<thead><tr><th>후보</th><th>처리 방식</th></tr></thead>
+<tbody>
+<tr><td>P3, P6, P4, P5</td><td>높은 점수로 선택됨. P3은 다각형을 닫으려고 마지막에 한 번 더 선택됨</td></tr>
+<tr><td>P1, P2, P7</td><td>끝까지 후보로 남지만 <strong>학습된 점수가 낮아서</strong> 선택되지 않음</td></tr>
+<tr><td>⇐</td><td>다 돌았다고 판단하면 선택되어 디코딩 종료</td></tr>
+</tbody></table></div>
+<p>그래서 “안쪽 점은 고르지 마라”는 어떤 장치도 보장하지 않습니다. 순전히 모델이 배운 판단이고, 학습이 덜 됐거나 처음 보는 배치가 들어오면 틀릴 수 있습니다. 논문도 틀린 경우가 대부분 점들이 거의 일직선으로 놓인 곳이었다고 적고 있습니다. 안쪽 점인지 가장자리 점인지 애매해지는 배치입니다.</p>
+
+<h3>같은 점을 두 번 고르지 않게 하는 두 가지 방법</h3>
+<p>이미 고른 점을 또 고르지 않게 하는 방법은 두 가지입니다.</p>
+<ol>
+  <li><strong>디코더 상태가 기억하게 학습시키기 (원 논문의 볼록 껍질·들로네 실험).</strong> 논문은 이 두 문제에서 디코더를 제한하지 않았습니다. LSTM 디코더는 P3, P6, P4…를 차례로 입력받으면서 “어디까지 왔는지”를 \(d_i\)에 쌓아 갑니다. 정답에는 같은 꼭짓점이 (닫는 점을 빼고) 두 번 나오지 않으므로, 모델은 이미 지나온 점에 낮은 점수를 주도록 배웁니다. 하지만 배운 것이라 보장은 없습니다.</li>
+  <li><strong>마스크로 지우기.</strong> 어텐션과 별개로 “이미 고른 점” 장부를 들고 다니면서, 그 칸의 점수 \(u_j\)를 \(-\infty\)로 만들어 softmax에서 아예 빼 버립니다. 논문은 TSP에서 빔 서치가 유효한 경로만 보도록 제한했는데, 그러지 않으면 n &gt; 20에서 10% 이상의 경우 도시를 반복하거나 빼먹은 경로만 나왔다고 합니다. 이후 TSP 연구들(Bello 외 2016, Kool 외 2019)은 디코더에서 방문한 도시를 마스크로 지우는 방식을 씁니다.</li>
+</ol>
+<div class="key"><span class="lbl">정리</span><p>매 스텝 들어오는 입력(직전에 고른 점)은 질의 \(d_i\)를 바꾸는 데만 쓰입니다. 어텐션은 그 질의로 모든 후보에 점수를 다시 매길 뿐, 무언가를 “빼는” 연산은 없습니다. 안쪽 점이 빠지는 것은 <strong>학습된 낮은 점수</strong> 덕분이고, 같은 점을 두 번 고르지 않는 것은 <strong>학습된 디코더 상태</strong>나 어텐션 바깥의 <strong>마스크</strong>가 맡습니다.</p></div>
+
+<!-- ───────── 5 ───────── -->
+<h2 id="s5">5. 브라우저에서 학습하는 미니 Ptr-Net</h2>
 <p>이제 진짜로 학습시켜 봅니다. 과제는 <strong>숫자 정렬</strong>입니다. 0~1 사이 숫자 n개를 받아 작은 것부터 차례로 가리키면 됩니다. 논문 결론에서 다음 과제로 꼽은 것이 정렬이기도 합니다.</p>
 <p>브라우저에서 몇 초 안에 돌리려고 LSTM은 빼고 포인터 부분만 남겼습니다.</p>
 <div class="eq">$$u^i_j=v^\top\tanh\big(\underbrace{A\,x_j+a_0}_{W_1e_j}+\underbrace{B\,x_{C_{i-1}}+b_0}_{W_2d_i}\big),\qquad p(C_i)=\operatorname{softmax}(u^i)$$
@@ -319,47 +381,47 @@ footer a{color:var(--text-secondary)}
 <p>논문 모델의 디코더는 LSTM이라 지금까지 무엇을 골랐는지 기억합니다. 이 미니 모델은 직전 하나만 보므로, “이미 고른 위치는 다시 고르지 않는다”는 규칙을 <strong>마스크</strong>로 줄지 말지가 중요해집니다. 마스크를 켜면 이미 가리킨 위치의 점수를 \(-\infty\)로 만들어 softmax에서 뺍니다.</p>
 
 <div class="demo">
-  <h4>데모 4 · 정렬을 배우는 포인터</h4>
+  <h4>데모 5 · 정렬을 배우는 포인터</h4>
   <p class="cap">아래 행렬의 행은 디코딩 스텝, 열은 입력 위치(위에 적힌 값이 입력 숫자)입니다. 칸이 진할수록 그 스텝에서 그 위치를 가리킬 확률이 높습니다. 초록 테두리가 정답, 점이 모델이 실제로 고른 위치(틀리면 빨강)입니다. 디코딩은 모델이 스스로 고른 값을 다음 입력으로 넣는 탐욕적 방식입니다.</p>
   <div class="btns">
-    <button id="d4train" type="button">▶ 학습 시작</button>
-    <button id="d4reset" type="button">가중치 초기화</button>
-    <label class="chk"><input type="checkbox" id="d4mask" checked> 마스크 (이미 가리킨 위치 제외)</label>
+    <button id="d5train" type="button">▶ 학습 시작</button>
+    <button id="d5reset" type="button">가중치 초기화</button>
+    <label class="chk"><input type="checkbox" id="d5mask" checked> 마스크 (이미 가리킨 위치 제외)</label>
   </div>
   <div class="readout">
-    <div>반복<b id="d4it">0</b></div>
-    <div>스텝당 손실<b id="d4loss">—</b></div>
-    <div>n = 10 수열 정답률<b id="d4acc">—</b></div>
+    <div>반복<b id="d5it">0</b></div>
+    <div>스텝당 손실<b id="d5loss">—</b></div>
+    <div>n = 10 수열 정답률<b id="d5acc">—</b></div>
   </div>
-  <canvas id="c4loss" height="120" style="margin-top:10px"></canvas>
+  <canvas id="c5loss" height="120" style="margin-top:10px"></canvas>
   <div class="ctrls">
-    <div class="ctrl"><label>시험 수열 길이 n <b id="d4nv">8</b></label><input type="range" id="d4n" min="4" max="30" value="8"></div>
+    <div class="ctrl"><label>시험 수열 길이 n <b id="d5nv">8</b></label><input type="range" id="d5n" min="4" max="30" value="8"></div>
   </div>
-  <div class="btns"><button id="d4new" type="button">새 수열</button></div>
-  <canvas id="c4" height="300" style="margin-top:10px"></canvas>
+  <div class="btns"><button id="d5new" type="button">새 수열</button></div>
+  <canvas id="c5" height="300" style="margin-top:10px"></canvas>
   <p class="rowlbl">정답 순서 / 모델 출력</p>
-  <div class="seqline" id="d4true"></div>
-  <div class="seqline" id="d4pred"></div>
+  <div class="seqline" id="d5true"></div>
+  <div class="seqline" id="d5pred"></div>
 </div>
 <p>학습 전에는 모든 칸이 비슷하게 흐립니다. 몇백 번 반복하면 행렬에 대각선 대신 <strong>정렬 순서를 따라가는 지그재그 경로</strong>가 진하게 떠오릅니다. 입력 순서는 무작위인데 경로가 하나로 이어지는 이유는, 각 행이 “지금까지 고른 것 다음으로 작은 수”를 가리키기 때문입니다.</p>
 
-<!-- ───────── 5 ───────── -->
-<h2 id="s5">5. 같은 가중치로 더 긴 입력 — 그리고 마스크</h2>
-<p>데모 4의 모델은 길이 5~10 수열만 봤습니다. 그런데 파라미터 96개 중 어느 것도 n에 묶여 있지 않으니, 길이 50짜리 수열에도 <strong>그대로</strong> 돌릴 수 있습니다. seq2seq라면 출력층이 맞지 않아 실행조차 안 되는 상황입니다. 아래 버튼은 지금 모델을 길이마다 수열 150개로 시험합니다.</p>
+<!-- ───────── 6 ───────── -->
+<h2 id="s6">6. 같은 가중치로 더 긴 입력 — 그리고 마스크</h2>
+<p>데모 5의 모델은 길이 5~10 수열만 봤습니다. 그런데 파라미터 96개 중 어느 것도 n에 묶여 있지 않으니, 길이 50짜리 수열에도 <strong>그대로</strong> 돌릴 수 있습니다. seq2seq라면 출력층이 맞지 않아 실행조차 안 되는 상황입니다. 아래 버튼은 지금 모델을 길이마다 수열 150개로 시험합니다.</p>
 
 <div class="demo">
-  <h4>데모 5 · 길이별 정답률과 ‘유효하지 않은 출력’</h4>
+  <h4>데모 6 · 길이별 정답률과 ‘유효하지 않은 출력’</h4>
   <p class="cap">파랑 = 수열 전체를 맞힌 비율, 초록 = 위치별로 맞힌 비율, 빨강 점선 = 같은 위치를 두 번 이상 가리켜 순열이 아니게 된 비율. 회색 띠가 학습 때 본 길이입니다. 다시 평가하면 직전 결과가 옅은 선으로 남습니다.</p>
   <div class="btns">
-    <button id="d5eval" type="button">지금 모델 평가하기</button>
+    <button id="d6eval" type="button">지금 모델 평가하기</button>
   </div>
-  <canvas id="c5" height="260" style="margin-top:12px"></canvas>
+  <canvas id="c6" height="260" style="margin-top:12px"></canvas>
   <div class="legend">
     <span><i style="background:var(--s1)"></i>수열 정답률</span>
     <span><i style="background:var(--s3)"></i>위치별 정답률</span>
     <span><i style="background:var(--s8)"></i>유효하지 않은 출력</span>
   </div>
-  <p class="cap" style="margin-top:10px" id="d5note">데모 4에서 모델을 학습시킨 뒤 눌러 보세요.</p>
+  <p class="cap" style="margin-top:10px" id="d6note">데모 5에서 모델을 학습시킨 뒤 눌러 보세요.</p>
 </div>
 <p>권장 실험 순서는 이렇습니다.</p>
 <ol>
@@ -368,8 +430,8 @@ footer a{color:var(--text-secondary)}
 </ol>
 <div class="note">논문에서도 같은 일이 있었습니다. TSP에서는 빔 서치가 <strong>유효한 경로만</strong> 고려하도록 제한했는데, 그러지 않으면 모델이 도시를 두 번 들르거나 빼먹었고 n &gt; 20에서는 10% 이상의 경우에 유효한 경로를 하나도 내지 못했다고 합니다. 반면 볼록 껍질과 들로네 실험에서는 디코더를 제한하지 않았습니다. 포인터는 “입력 중 하나”만 보장할 뿐 “각 입력을 한 번씩”까지 보장하지는 않습니다.</div>
 
-<!-- ───────── 6 ───────── -->
-<h2 id="s6">6. 논문 실험 결과</h2>
+<!-- ───────── 7 ───────── -->
+<h2 id="s7">7. 논문 실험 결과</h2>
 <p>모든 실험에서 은닉 유닛 256개 또는 512개짜리 단층 LSTM을 썼고, 학습률 1.0의 SGD, 배치 128, 가중치 초기화 범위 −0.08~0.08, 기울기 L2 클리핑 2.0, 학습 쌍 100만 개였습니다. 저자들은 하이퍼파라미터 탐색을 거의 하지 않고 세 문제에 같은 설정을 썼다고 밝힙니다.</p>
 <h3>볼록 껍질 (표 1)</h3>
 <div class="tw"><table>
@@ -410,24 +472,24 @@ footer a{color:var(--text-secondary)}
   <li><strong>5–20으로 학습해 더 긴 n에 적용</strong>: 25에서는 거의 완벽하고 30도 괜찮지만, 40부터 무너집니다(50에서 7.66). 볼록 껍질이 학습 길이의 10배까지 버틴 것과 대조적인데, 저자들은 TSP를 푸는 알고리즘이 \(O(n\log n)\)보다 훨씬 복잡하기 때문일 수 있다고 봅니다.</li>
 </ul>
 
-<!-- ───────── 7 ───────── -->
-<h2 id="s7">7. 그다음: 복사하는 포인터</h2>
+<!-- ───────── 8 ───────── -->
+<h2 id="s8">8. 그다음: 복사하는 포인터</h2>
 <p>“입력을 가리킨다”는 발상은 기하 문제 밖에서 더 오래 쓰였습니다. 요약·질의응답·대화에서 자주 문제가 되는 것은 사전에 없는 단어(OOV)입니다. 사람 이름이나 지명은 원문에 있는데 출력 사전에는 없어서 <code>[UNK]</code>로 나옵니다. 포인터를 쓰면 원문 위치를 가리켜 그 단어를 <strong>복사</strong>할 수 있습니다.</p>
 <p>대표적인 형태가 See·Liu·Manning(ACL 2017)의 pointer-generator입니다. 디코더가 스텝마다 “생성할 확률” \(p_{\text{gen}}\)을 내고, 사전에서 생성하는 분포와 어텐션으로 복사하는 분포를 섞습니다.</p>
 <div class="eq">$$P(w)=p_{\text{gen}}\,P_{\text{vocab}}(w)+(1-p_{\text{gen}})\sum_{i:\,w_i=w}a_i$$
 <span class="note">두 번째 항이 Ptr-Net의 포인터입니다. 원문에 같은 단어가 여러 번 나오면 그 위치들의 어텐션이 더해집니다. 사전에 없는 단어는 \(P_{\text{vocab}}(w)=0\)이라 복사로만 나올 수 있습니다.</span></div>
 
 <div class="demo">
-  <h4>데모 6 · 생성할까, 복사할까</h4>
+  <h4>데모 7 · 생성할까, 복사할까</h4>
   <p class="cap">요약문의 첫 단어를 고르는 스텝입니다. 원문 “Okonkwo won the Valencia marathon on Sunday”에서 Okonkwo와 Valencia(★)는 사전에 없습니다. 최종 분포의 주황은 원문에서만, 파랑은 사전에서만, 보라는 양쪽에서 확률을 받은 단어입니다. 어텐션과 사전 분포 숫자는 설명을 위해 정한 예시 값입니다.</p>
   <div class="ctrls">
-    <div class="ctrl"><label><span>p<sub>gen</sub> (생성 확률)</span> <b id="d6pv">0.30</b></label><input type="range" id="d6p" min="0" max="100" value="30"></div>
+    <div class="ctrl"><label><span>p<sub>gen</sub> (생성 확률)</span> <b id="d7pv">0.30</b></label><input type="range" id="d7p" min="0" max="100" value="30"></div>
   </div>
   <div class="two" style="margin-top:6px">
-    <div><p class="rowlbl">원문 어텐션 a<sub>i</sub> (복사 분포)</p><div class="bars" id="d6att"></div>
-         <p class="rowlbl">사전 분포 P<sub>vocab</sub> (생성 분포)</p><div class="bars" id="d6voc"></div></div>
-    <div><p class="rowlbl">최종 분포 P(w)</p><div class="bars" id="d6fin"></div>
-         <div class="readout"><div>고르는 단어<b id="d6pick">—</b></div></div></div>
+    <div><p class="rowlbl">원문 어텐션 a<sub>i</sub> (복사 분포)</p><div class="bars" id="d7att"></div>
+         <p class="rowlbl">사전 분포 P<sub>vocab</sub> (생성 분포)</p><div class="bars" id="d7voc"></div></div>
+    <div><p class="rowlbl">최종 분포 P(w)</p><div class="bars" id="d7fin"></div>
+         <div class="readout"><div>고르는 단어<b id="d7pick">—</b></div></div></div>
   </div>
 </div>
 <p>같은 계열의 연구를 몇 가지 더 꼽으면 이렇습니다.</p>
@@ -439,8 +501,8 @@ footer a{color:var(--text-secondary)}
   <li><strong>Attention, Learn to Solve Routing Problems!</strong> (Kool 외, ICLR 2019) — 인코더를 Transformer로 바꾸고 디코더는 여전히 입력 노드를 가리키는 구조로 경로 문제를 풉니다.</li>
 </ul>
 
-<!-- ───────── 8 ───────── -->
-<h2 id="s8">8. 확인 퀴즈</h2>
+<!-- ───────── 9 ───────── -->
+<h2 id="s9">9. 확인 퀴즈</h2>
 <div id="quiz"></div>
 <p class="quiz-score" id="quizScore"></p>
 
@@ -532,7 +594,7 @@ function drawD1(){
   c.fillStyle=hexA(css('--s3'),0.08);c.fill();c.strokeStyle=css('--s3');c.lineWidth=2;c.stroke();
   drawPts(g,M,d1P,new Set(H));
   var K=5,miss=0;
-  $('#d1ans').innerHTML=chip('⇒','tok')+H.map(function(i){var bad=i+1>K;if(bad)miss++;return chip(i+1,bad?'miss':'on');}).join('')+chip('⇐','tok');
+  $('#d1ans').innerHTML=chip('⇒','tok')+H.concat(H.length>2?[H[0]]:[]).map(function(i){var bad=i+1>K;if(bad)miss++;return chip(i+1,bad?'miss':'on');}).join('')+chip('⇐','tok');
   var s='';for(var k=1;k<=Math.max(K,n);k++){if(k<=K)s+=chip(k,H.indexOf(k-1)>=0?'on':'');else if(H.indexOf(k-1)>=0)s+=chip(k+'?','miss');}
   $('#d1s2s').innerHTML=s+chip('⇐','tok');
   s='';for(k=1;k<=n;k++)s+=chip('P'+k,H.indexOf(k-1)>=0?'on':'');
@@ -566,10 +628,10 @@ function drawD2(){
   // 순서 번호
   S.forEach(function(i,k){var x=M.X(P[i].x),y=M.Y(P[i].y);c.font='700 10.5px system-ui';c.fillStyle=css('--s2');c.fillText(String(k+1),x-12,y+15);});
   drawPts(g,M,P,new Set(S));
-  $('#d2seq').innerHTML=chip('⇒','tok')+S.map(function(i){return chip(i+1,'on');}).join('')+chip('⇐','tok');
+  $('#d2seq').innerHTML=chip('⇒','tok')+S.concat(d2mode==='hull'&&S.length>2?[S[0]]:[]).map(function(i){return chip(i+1,'on');}).join('')+chip('⇐','tok');
   if(d2mode==='hull'){
     $('#d2lbl').textContent='출력 번호열 — 볼록 껍질 (주황 숫자 = 출력 순서)';
-    $('#d2read').innerHTML='<div>입력 점<b>'+P.length+'개</b></div><div>출력 길이 m(𝒫)<b>'+S.length+'개</b></div><div>껍질 안쪽 점<b>'+(P.length-S.length)+'개</b></div>';
+    $('#d2read').innerHTML='<div>입력 점<b>'+P.length+'개</b></div><div>꼭짓점<b>'+S.length+'개</b></div><div>출력 길이 m(𝒫), 닫는 점 포함<b>'+(S.length>2?S.length+1:S.length)+'개</b></div><div>껍질 안쪽 점<b>'+(P.length-S.length)+'개</b></div>';
   }else{
     $('#d2lbl').textContent='출력 번호열 — TSP 최적 경로, Held-Karp (주황 숫자 = 방문 순서)';
     $('#d2read').innerHTML='<div>최적 경로 길이<b>'+f(r.len,3)+'</b></div><div>최근접 이웃 탐욕법(점선)<b>'+f(r.glen,3)+'</b></div><div>탐욕법이 더 긴 비율<b>+'+f((r.glen/r.len-1)*100,1)+'%</b></div>';
@@ -632,6 +694,61 @@ $('#c3').addEventListener('pointerdown',function(e){d3drag=true;this.setPointerC
 $('#c3').addEventListener('pointermove',function(e){if(!d3drag)return;d3=d3pt(e);drawD3();});
 $('#c3').addEventListener('pointerup',function(){d3drag=false;});
 
+/* ══════ 데모 4: 한 스텝씩 ══════ */
+// 0절 그림과 같은 좌표(viewBox 330×205). 0번 칸은 끝 기호 ⇐
+var XY4=[null,[150,120],[205,128],[290,150],[40,120],[190,170],[150,40],[120,90]];
+var NM4=['⇐','P1','P2','P3','P4','P5','P6','P7'];
+var PS4=[[.01,.01,.03,.80,.05,.04,.05,.01],[.02,.02,.06,.01,.03,.05,.78,.03],[.02,.03,.02,.02,.82,.03,.01,.05],
+         [.04,.04,.03,.02,.01,.83,.01,.02],[.05,.02,.03,.85,.01,.01,.02,.01],[.92,.01,.02,.01,.01,.01,.01,.01]];
+var PK4=[3,6,4,5,3,0],k4=0;
+var NOTE4=[
+ '첫 스텝에는 시작 기호 ⇒가 들어갑니다. 아직 아무것도 고르지 않은 상태입니다. 학습 데이터의 정답은 늘 “껍질 위에서 번호가 가장 작은 점”부터 시작했으므로 모델은 P3에 높은 점수를 줍니다. P1·P2는 번호가 더 작지만 안쪽 점이라 점수가 낮습니다.',
+ '방금 고른 P3의 좌표가 디코더에 들어가 상태 d가 바뀌었습니다. 후보 벡터 e₁~e₇은 그대로인데, 질의 d가 바뀌었으므로 여덟 칸의 점수가 전부 다시 계산됩니다. 반시계 방향으로 다음 꼭짓점인 P6이 높게 나옵니다.',
+ 'P6이 입력됩니다. 다음 꼭짓점은 P4입니다. P7은 P6과 P4 사이에 가깝게 있지만 껍질 안쪽이라 점수가 낮습니다.',
+ 'P4가 입력되고 P5가 선택됩니다. 꼭짓점 네 개를 모두 지났습니다.',
+ 'P5가 입력됩니다. 논문 표기에서는 시작점을 한 번 더 가리켜 다각형을 닫습니다. 그래서 이번에는 다시 P3입니다. 마스크를 쓴다면 시작점은 이 스텝까지 지우지 말고 남겨 둬야 합니다.',
+ '닫는 점까지 나왔으므로 모델은 끝 기호 ⇐ 자리를 가리킵니다. ⇐는 인코더 맨 앞에 따로 둔 특별한 칸입니다(논문 그림 1(b)). 이걸 고르면 디코딩이 끝납니다.'];
+function d4dist(k){ // 마스크: 이미 고른 점은 지우되 시작점(P3)은 닫을 때까지 남겨 둔다
+  var p=PS4[k].slice(),m=new Array(8).fill(false);
+  if($('#d4mask').checked){for(var t=0;t<k;t++)m[PK4[t]]=true;if(k<=4)m[3]=false;
+    var Z=0;p=p.map(function(v,i){return m[i]?0:v;});p.forEach(function(v){Z+=v;});p=p.map(function(v){return v/Z;});}
+  return {p:p,m:m};}
+function drawD4walk(){
+  var done=k4>=6,k=Math.min(k4,5),r=d4dist(k),p=r.p,g=setup($('#c4')),c=g.c;frame(g);
+  var s=Math.min(g.w/330,g.h/205),ox=(g.w-330*s)/2,oy=(g.h-205*s)/2;
+  function X(i){return ox+XY4[i][0]*s;}function Y(i){return oy+XY4[i][1]*s;}
+  var path=PK4.slice(0,done?6:k).filter(function(i){return i>0;});
+  if(path.length>1){c.beginPath();path.forEach(function(i,t){t?c.lineTo(X(i),Y(i)):c.moveTo(X(i),Y(i));});
+    c.strokeStyle=css('--s2');c.lineWidth=2.5;c.stroke();}
+  for(var i=1;i<8;i++){
+    var pi=done?0:p[i],rad=4+22*Math.sqrt(pi);
+    if(!done&&r.m[i]){c.beginPath();c.arc(X(i),Y(i),5,0,7);c.strokeStyle=css('--muted');c.lineWidth=1.5;c.stroke();}
+    else{c.beginPath();c.arc(X(i),Y(i),rad,0,7);c.fillStyle=hexA(css('--s1'),done?0.15:0.18+0.7*pi);c.fill();
+      c.beginPath();c.arc(X(i),Y(i),4,0,7);c.fillStyle=css('--text-secondary');c.fill();}
+    if(!done&&PK4[k]===i){c.beginPath();c.arc(X(i),Y(i),rad+4,0,7);c.strokeStyle=css('--s1');c.lineWidth=2.5;c.stroke();}
+    var lx=X(i)+(done||r.m[i]?8:Math.max(8,rad*0.8+4));
+    c.font='600 12px system-ui';c.fillStyle=css('--text-primary');c.fillText(NM4[i],lx,Y(i)-8);
+    if(!done){c.font='11px system-ui';c.fillStyle=css('--muted');c.fillText(r.m[i]?'지움':f(pi,2),lx,Y(i)+15);}
+  }
+  // 끝 기호 칸
+  var bw=58,bh=26,bx=8,by=8,pe=done?0:p[0];
+  c.fillStyle=hexA(css('--s1'),0.1+0.8*pe);c.fillRect(bx,by,bw,bh);
+  c.strokeStyle=!done&&PK4[k]===0?css('--s1'):css('--border');c.lineWidth=!done&&PK4[k]===0?2.5:1;c.strokeRect(bx,by,bw,bh);
+  c.font='600 12px system-ui';c.fillStyle=css('--text-primary');c.fillText('⇐ '+(done?'':f(pe,2)),bx+8,by+17);
+  $('#d4step').textContent=done?'완료':(k+1)+' / 6';
+  $('#d4in').textContent=done?'—':(k===0?'⇒ (시작)':NM4[PK4[k-1]]+' 좌표');
+  $('#d4pick').textContent=done?'—':NM4[PK4[k]];
+  var sel=done?-1:PK4[k];
+  $('#d4bars').innerHTML=done?'':p.map(function(v,i){return '<span class="nm">'+NM4[i]+(i===sel?' ◀':'')+'</span><span class="b"><i style="width:'+(v*100)+'%;background:'+(i===sel?css('--s1'):hexA(css('--s1'),0.45))+'"></i></span><span class="v">'+(r.m[i]?'지움':f(v,2))+'</span>';}).join('');
+  var outN=done?6:k;$('#d4out').innerHTML=chip('⇒','tok')+PK4.slice(0,outN).map(function(i){return chip(i===0?'⇐':i,i===0?'tok':'on');}).join('');
+  $('#d4note').innerHTML=done?'최종 출력은 <b>⇒ 3 → 6 → 4 → 5 → 3 ⇐</b>입니다. P1·P2·P7은 여섯 스텝 내내 후보였지만 한 번도 뽑히지 않았습니다. 마스크를 켜고 다시 돌려 봐도 이 세 점은 지워지지 않습니다.':NOTE4[k];
+  $('#d4prev').disabled=k4===0;$('#d4next').disabled=done;$('#d4next').textContent=k4===5?'결과 보기 ▶':'다음 스텝 ▶';
+}
+$('#d4first').onclick=function(){k4=0;drawD4walk();};
+$('#d4prev').onclick=function(){if(k4>0)k4--;drawD4walk();};
+$('#d4next').onclick=function(){if(k4<6)k4++;drawD4walk();};
+$('#d4mask').onchange=drawD4walk;
+
 /* ══════ 미니 Ptr-Net ══════ */
 // u_j = v·tanh(A·x_j + a0 + q),  q = B·x_prev + b0 (첫 스텝은 학습되는 시작 벡터 s)
 var HID=16,SC=10,KEYS=['A','a0','B','b0','s','v'];
@@ -664,7 +781,7 @@ function decode(x,mask){var n=x.length,used=mask?new Array(n).fill(false):null,o
   for(var t=0;t<n;t++){var r=scores(x,prev,used),b=0;for(var j=1;j<n;j++)if(r.p[j]>r.p[b])b=j;
     out.push(b);P.push(r.p);if(used)used[b]=true;prev=x[b];}
   return {out:out,P:P};}
-function trainStep(){var g=zeroG(),B=32,L=0,mask=$('#d4mask').checked;
+function trainStep(){var g=zeroG(),B=32,L=0,mask=$('#d5mask').checked;
   for(var b=0;b<B;b++){var n=5+Math.floor(rng()*6),x=[];for(var i=0;i<n;i++)x.push(rng());L+=seqGrad(x,mask,g);}
   iter++;var lr=0.01,b1=0.9,b2=0.999;
   KEYS.forEach(function(k){for(var i=0;i<HID;i++){var gi=g[k][i]/B;mom[k][i]=b1*mom[k][i]+(1-b1)*gi;vel[k][i]=b2*vel[k][i]+(1-b2)*gi*gi;
@@ -675,13 +792,13 @@ function evalLen(n,T,mask,r){var ok=0,el=0,inv=0;
     for(k=0;k<n;k++)if(o[k]===ord[k])c++;if(c===n)ok++;el+=c/n;if(new Set(o).size<n)inv++;}
   return {seq:ok/T,el:el/T,inv:inv/T};}
 
-/* ══════ 데모 4 ══════ */
-var d4x=[],d4seed=3;
-function d4gen(){var r=mulberry(d4seed),n=+$('#d4n').value;d4x=[];for(var i=0;i<n;i++)d4x.push(Math.round(r()*100)/100);
+/* ══════ 데모 5 ══════ */
+var d5x=[],d5seed=3;
+function d5gen(){var r=mulberry(d5seed),n=+$('#d5n').value;d5x=[];for(var i=0;i<n;i++)d5x.push(Math.round(r()*100)/100);
   // 같은 값이 겹치지 않게
-  var s=new Set();d4x=d4x.map(function(v){while(s.has(v))v=Math.round((v+0.01)*100)/100%1;s.add(v);return v;});}
+  var s=new Set();d5x=d5x.map(function(v){while(s.has(v))v=Math.round((v+0.01)*100)/100%1;s.add(v);return v;});}
 function drawLoss(){
-  var g=setup($('#c4loss')),c=g.c,pl=40,pb=18;frame(g);
+  var g=setup($('#c5loss')),c=g.c,pl=40,pb=18;frame(g);
   c.font='11px system-ui';c.fillStyle=css('--muted');
   if(!lossHist.length){c.fillText('학습을 시작하면 손실 곡선이 그려집니다',pl,g.h/2);return;}
   var mx=Math.max(0.5,Math.max.apply(null,lossHist.slice(0,20))),N=Math.max(lossHist.length,50);
@@ -690,10 +807,10 @@ function drawLoss(){
   lossHist.forEach(function(v,i){var x=pl+(g.w-8-pl)*i/(N-1),y=8+(g.h-8-pb)*(1-Math.min(v,mx)/mx);i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();
   c.fillStyle=css('--muted');c.fillText('반복 '+(lossHist.length*20),g.w-80,g.h-4);
 }
-function drawD4(){
-  $('#d4nv').textContent=$('#d4n').value;if(d4x.length!==+$('#d4n').value)d4gen();
-  var x=d4x,n=x.length,mask=$('#d4mask').checked,dec=decode(x,mask),ord=sortedIdx(x);
-  var cv=$('#c4'),cw=cv.clientWidth,top=34,left=34,cell=Math.max(8,Math.min(40,Math.floor((cw-left-6)/n)));
+function drawD5(){
+  $('#d5nv').textContent=$('#d5n').value;if(d5x.length!==+$('#d5n').value)d5gen();
+  var x=d5x,n=x.length,mask=$('#d5mask').checked,dec=decode(x,mask),ord=sortedIdx(x);
+  var cv=$('#c5'),cw=cv.clientWidth,top=34,left=34,cell=Math.max(8,Math.min(40,Math.floor((cw-left-6)/n)));
   cv.setAttribute('height',top+cell*n+8);
   var g=setup(cv),c=g.c,used=new Array(n).fill(false);
   c.font='600 '+(cell>=30?11:9.5)+'px system-ui';c.textAlign='center';
@@ -711,28 +828,28 @@ function drawD4(){
     c.beginPath();c.arc(left+pk*cell+cell/2,top+t*cell+cell/2,Math.max(2,cell*0.14),0,7);c.fillStyle=pk===tg?css('--text-primary'):css('--s8');c.fill();
     if(mask)used[pk]=true;}
   c.textAlign='left';
-  $('#d4true').innerHTML='정답: '+ord.map(function(i){return f(x[i],2);}).join('  ');
-  $('#d4pred').innerHTML='모델: '+dec.out.map(function(i,t){var s=f(x[i],2);return i===ord[t]?s:'<span class="w">'+s+'</span>';}).join('  ');
+  $('#d5true').innerHTML='정답: '+ord.map(function(i){return f(x[i],2);}).join('  ');
+  $('#d5pred').innerHTML='모델: '+dec.out.map(function(i,t){var s=f(x[i],2);return i===ord[t]?s:'<span class="w">'+s+'</span>';}).join('  ');
 }
-function d4read(){$('#d4it').textContent=iter;$('#d4loss').textContent=lossHist.length?f(lossHist[lossHist.length-1],3):'—';}
+function d5read(){$('#d5it').textContent=iter;$('#d5loss').textContent=lossHist.length?f(lossHist[lossHist.length-1],3):'—';}
 function trainLoop(){
   if(!training)return;var L=0;for(var i=0;i<20;i++)L+=trainStep();lossHist.push(L/20);
-  if(iter%200===0){var e=evalLen(10,60,$('#d4mask').checked,mulberry(99));$('#d4acc').textContent=f(e.seq*100,0)+'%';}
-  d4read();drawLoss();drawD4();
+  if(iter%200===0){var e=evalLen(10,60,$('#d5mask').checked,mulberry(99));$('#d5acc').textContent=f(e.seq*100,0)+'%';}
+  d5read();drawLoss();drawD5();
   if(iter>=4000){stopTrain();return;}
   trainRaf=requestAnimationFrame(trainLoop);
 }
-function stopTrain(){training=false;cancelAnimationFrame(trainRaf);$('#d4train').textContent=iter>=4000?'✓ 4,000회 완료':'▶ 학습 계속';}
-$('#d4train').onclick=function(){if(training){stopTrain();return;}if(iter>=4000)return;training=true;this.textContent='❚❚ 일시 정지';trainLoop();};
-$('#d4reset').onclick=function(){stopTrain();newNet();$('#d4train').textContent='▶ 학습 시작';$('#d4acc').textContent='—';d4read();drawLoss();drawD4();};
-$('#d4mask').onchange=function(){$('#d4reset').onclick();};
-$('#d4n').oninput=function(){d4gen();drawD4();};
-$('#d4new').onclick=function(){d4seed++;d4gen();drawD4();};
+function stopTrain(){training=false;cancelAnimationFrame(trainRaf);$('#d5train').textContent=iter>=4000?'✓ 4,000회 완료':'▶ 학습 계속';}
+$('#d5train').onclick=function(){if(training){stopTrain();return;}if(iter>=4000)return;training=true;this.textContent='❚❚ 일시 정지';trainLoop();};
+$('#d5reset').onclick=function(){stopTrain();newNet();$('#d5train').textContent='▶ 학습 시작';$('#d5acc').textContent='—';d5read();drawLoss();drawD5();};
+$('#d5mask').onchange=function(){$('#d5reset').onclick();};
+$('#d5n').oninput=function(){d5gen();drawD5();};
+$('#d5new').onclick=function(){d5seed++;d5gen();drawD5();};
 
-/* ══════ 데모 5 ══════ */
-var LENS=[5,8,10,15,20,30,40,50],d5cur=null,d5prev=null,d5busy=false;
-function drawD5(){
-  var g=setup($('#c5')),c=g.c,pl=40,pr=12,pt=12,pb=28,W=g.w-pl-pr,H=g.h-pt-pb;frame(g);
+/* ══════ 데모 6 ══════ */
+var LENS=[5,8,10,15,20,30,40,50],d6cur=null,d6prev=null,d6busy=false;
+function drawD6(){
+  var g=setup($('#c6')),c=g.c,pl=40,pr=12,pt=12,pb=28,W=g.w-pl-pr,H=g.h-pt-pb;frame(g);
   function X(i){return pl+W*i/(LENS.length-1);}function Y(v){return pt+H*(1-v);}
   c.fillStyle=hexA(css('--muted'),0.12);c.fillRect(X(0),pt,X(2)-X(0),H);
   c.font='11px system-ui';c.strokeStyle=css('--grid');c.lineWidth=1;c.beginPath();
@@ -743,47 +860,49 @@ function drawD5(){
     c.strokeStyle=hexA(col,alpha);c.lineWidth=alpha<1?1.5:2.2;c.setLineDash(dash?[5,4]:[]);c.beginPath();
     res.forEach(function(r,i){if(!r)return;var x=X(i),y=Y(r[key]);i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();c.setLineDash([]);
     if(alpha===1)res.forEach(function(r,i){if(!r)return;c.beginPath();c.arc(X(i),Y(r[key]),3,0,7);c.fillStyle=col;c.fill();});}
-  [[d5prev,0.28],[d5cur,1]].forEach(function(z){if(!z[0])return;var r=z[0][0];line(r,'el',css('--s3'),z[1]);line(r,'inv',css('--s8'),z[1],true);line(r,'seq',css('--s1'),z[1]);});
+  [[d6prev,0.28],[d6cur,1]].forEach(function(z){if(!z[0])return;var r=z[0][0];line(r,'el',css('--s3'),z[1]);line(r,'inv',css('--s8'),z[1],true);line(r,'seq',css('--s1'),z[1]);});
 }
-$('#d5eval').onclick=function(){
-  if(d5busy)return;d5busy=true;if(d5cur&&d5cur[0].every(Boolean))d5prev=d5cur;
-  var mask=$('#d4mask').checked,res=new Array(LENS.length).fill(null),r=mulberry(2024),i=0;d5cur=[res,mask];
-  $('#d5note').textContent='평가 중…';
-  (function step(){res[i]=evalLen(LENS[i],150,mask,r);i++;drawD5();
+$('#d6eval').onclick=function(){
+  if(d6busy)return;d6busy=true;if(d6cur&&d6cur[0].every(Boolean))d6prev=d6cur;
+  var mask=$('#d5mask').checked,res=new Array(LENS.length).fill(null),r=mulberry(2024),i=0;d6cur=[res,mask];
+  $('#d6note').textContent='평가 중…';
+  (function step(){res[i]=evalLen(LENS[i],150,mask,r);i++;drawD6();
     if(i<LENS.length){requestAnimationFrame(step);return;}
-    d5busy=false;var a=res[0],z=res[res.length-1];
-    $('#d5note').innerHTML='마스크 <b>'+(mask?'켬':'끔')+'</b>, 학습 '+iter+'회 모델 — n=5 수열 정답률 <b>'+f(a.seq*100,1)+'%</b>, n=50 수열 정답률 <b>'+f(z.seq*100,1)+'%</b>, n=50 유효하지 않은 출력 <b>'+f(z.inv*100,1)+'%</b>. 파라미터는 n과 상관없이 96개 그대로입니다.';
+    d6busy=false;var a=res[0],z=res[res.length-1];
+    $('#d6note').innerHTML='마스크 <b>'+(mask?'켬':'끔')+'</b>, 학습 '+iter+'회 모델 — n=5 수열 정답률 <b>'+f(a.seq*100,1)+'%</b>, n=50 수열 정답률 <b>'+f(z.seq*100,1)+'%</b>, n=50 유효하지 않은 출력 <b>'+f(z.inv*100,1)+'%</b>. 파라미터는 n과 상관없이 96개 그대로입니다.';
   })();
 };
 
-/* ══════ 데모 6 ══════ */
+/* ══════ 데모 7 ══════ */
 var SRC=['Okonkwo','won','the','Valencia','marathon','on','Sunday'],ATT=[0.55,0.04,0.03,0.2,0.1,0.02,0.06];
 var OOV=['Okonkwo','Valencia'];
 var VOC={'on':0.01,'runner':0.29,'[UNK]':0.25,'the':0.15,'a':0.1,'marathon':0.08,'race':0.06,'won':0.03,'Sunday':0.03};
 function bars(list,col,mxv){return list.map(function(z){return '<span class="nm">'+z[0]+'</span><span class="b"><i style="width:'+(z[1]/mxv*100)+'%;background:'+(z[2]||col)+'"></i></span><span class="v">'+f(z[1],3)+'</span>';}).join('');}
-function drawD6(){
-  var pg=+$('#d6p').value/100;$('#d6pv').textContent=f(pg,2);
-  $('#d6att').innerHTML=bars(SRC.map(function(w,i){return [w+(OOV.indexOf(w)>=0?' ★':''),ATT[i]];}),css('--s2'),1);
-  $('#d6voc').innerHTML=bars(Object.keys(VOC).map(function(w){return [w,VOC[w]];}).sort(function(a,b){return b[1]-a[1];}),css('--s1'),1);
+function drawD7(){
+  var pg=+$('#d7p').value/100;$('#d7pv').textContent=f(pg,2);
+  $('#d7att').innerHTML=bars(SRC.map(function(w,i){return [w+(OOV.indexOf(w)>=0?' ★':''),ATT[i]];}),css('--s2'),1);
+  $('#d7voc').innerHTML=bars(Object.keys(VOC).map(function(w){return [w,VOC[w]];}).sort(function(a,b){return b[1]-a[1];}),css('--s1'),1);
   var F={};Object.keys(VOC).forEach(function(w){F[w]=pg*VOC[w];});
   SRC.forEach(function(w,i){F[w]=(F[w]||0)+(1-pg)*ATT[i];});
   var L=Object.keys(F).map(function(w){return [w,F[w]];}).sort(function(a,b){return b[1]-a[1];});
   L.forEach(function(z){z[2]=VOC[z[0]]===undefined?css('--s2'):(SRC.indexOf(z[0])>=0?css('--s4'):css('--s1'));});
-  $('#d6fin').innerHTML=bars(L.slice(0,9),css('--s1'),Math.max(0.3,L[0][1]));
-  var w=L[0][0];$('#d6pick').innerHTML=w+(w==='[UNK]'?' <span class="bad">(알 수 없는 단어)</span>':OOV.indexOf(w)>=0?' <span class="ok">(원문에서 복사)</span>':'');
+  $('#d7fin').innerHTML=bars(L.slice(0,9),css('--s1'),Math.max(0.3,L[0][1]));
+  var w=L[0][0];$('#d7pick').innerHTML=w+(w==='[UNK]'?' <span class="bad">(알 수 없는 단어)</span>':OOV.indexOf(w)>=0?' <span class="ok">(원문에서 복사)</span>':'');
 }
-$('#d6p').oninput=drawD6;
+$('#d7p').oninput=drawD7;
 
 /* ══════ 퀴즈 ══════ */
 var QZ=[
  {q:'점 n개의 볼록 껍질을 seq2seq로 풀 때 근본적인 문제는?',o:['LSTM이 좌표를 입력으로 받을 수 없다','출력층의 칸 수가 학습 때 고정돼 n이 바뀌면 출력할 수 없는 번호가 생긴다','볼록 껍질은 정답이 하나가 아니다'],a:1,
   e:'출력 사전 크기 K가 W_o의 모양에 박혀 있습니다. 논문은 그래서 n마다 모델을 따로 학습해야 한다고 지적합니다.'},
+ {q:'0절 그림의 볼록 껍질을 디코딩할 때, 안쪽 점 P1·P2·P7은 어떻게 처리되나?',o:['선택된 꼭짓점이 늘어날 때마다 마스크로 하나씩 지워진다','끝까지 후보로 남지만 학습된 점수가 낮아 한 번도 선택되지 않는다','인코더가 미리 걸러 내 후보에 들어가지 않는다'],a:1,
+  e:'마스크는 이미 고른 점만 지웁니다. 안쪽 점은 매 스텝 후보로 남아 있고, 정답에 한 번도 나오지 않는 점이라 모델이 낮은 점수를 주도록 배웠을 뿐입니다.'},
  {q:'Bahdanau 어텐션과 Ptr-Net이 softmax 분포를 쓰는 방식의 차이는?',o:['어텐션은 분포로 인코더 상태를 섞어 문맥 벡터를 만들고, Ptr-Net은 분포 자체를 출력으로 쓴다','Ptr-Net은 softmax 대신 argmax만 쓴다','어텐션은 덧셈형, Ptr-Net은 내적형 점수를 쓴다'],a:0,
   e:'점수 식 u = vᵀtanh(W₁e + W₂d)는 둘이 같습니다. Ptr-Net은 마지막의 가중 평균 단계를 지우고 분포를 그대로 p(C_i | …)로 씁니다.'},
  {q:'입력 길이가 50에서 500으로 늘면 Ptr-Net 포인터 부분의 파라미터 수는?',o:['10배가 된다','n²에 비례해 늘어난다','그대로다'],a:2,
   e:'v, W₁, W₂의 크기는 은닉 차원으로만 정해집니다. 그래서 길이 5~50으로 학습한 모델 하나를 n = 500에도 돌릴 수 있었습니다.'},
  {q:'논문이 TSP에서 빔 서치를 유효한 경로만 보도록 제한한 이유는?',o:['계산 시간을 줄이려고','제한하지 않으면 도시를 반복하거나 빼먹은 출력이 나왔기 때문','Held-Karp와 같은 결과를 내려고'],a:1,
-  e:'포인터는 “입력 중 하나”만 보장합니다. n > 20에서는 제한이 없으면 10% 이상의 경우 유효한 경로를 하나도 내지 못했습니다. 데모 5에서 마스크를 끄면 같은 현상을 볼 수 있습니다.'},
+  e:'포인터는 “입력 중 하나”만 보장합니다. n > 20에서는 제한이 없으면 10% 이상의 경우 유효한 경로를 하나도 내지 못했습니다. 데모 6에서 마스크를 끄면 같은 현상을 볼 수 있습니다.'},
  {q:'근사 알고리즘 A1의 출력으로 학습한 Ptr-Net(n = 50)의 경로 길이는?',o:['A1보다 길다','A1보다 조금 짧다(6.42 vs 6.46)','최적해와 같다'],a:1,
   e:'가장 약한 근사 알고리즘을 흉내 내도록 배웠는데 결과는 그 알고리즘보다 약간 더 좋았습니다.'},
  {q:'pointer-generator에서 p_gen = 1이면 원문에만 있는 고유명사(OOV)는?',o:['복사 분포로 그대로 나온다','나올 수 없다 — 사전 분포만 남는다','[UNK]와 확률을 나눠 갖는다'],a:1,
@@ -807,7 +926,7 @@ var QZ=[
 })();
 
 /* ══════ 공통 ══════ */
-function drawAll(){drawD1();drawD2();drawD3();drawLoss();drawD4();drawD5();drawD6();}
+function drawAll(){drawD1();drawD2();drawD3();drawD4walk();drawLoss();drawD5();drawD6();drawD7();}
 var tbtn=$('#themeBtn');
 if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.setAttribute('data-theme','dark');
 function syncBtn(){tbtn.textContent=document.documentElement.getAttribute('data-theme')==='dark'?'◑ 라이트':'◐ 다크';}
