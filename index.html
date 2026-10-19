@@ -155,6 +155,12 @@ footer a{color:var(--text-secondary)}
 .chk{display:inline-flex;gap:7px;align-items:center;font-size:13.5px;color:var(--text-secondary);cursor:pointer}
 .chk input{accent-color:var(--s1)}
 .fig{display:block;margin:0 auto}
+.next{display:block;text-decoration:none;color:var(--text-primary);background:var(--surface-1);border:1px solid var(--border);
+  border-left:3px solid var(--s1);border-radius:0 14px 14px 0;padding:16px 20px;margin:24px 0}
+.next:hover{background:var(--wash)}
+.next small{display:block;font-size:11.5px;font-weight:700;letter-spacing:0.1em;color:var(--s1)}
+.next b{display:block;font-size:17px}
+.next span{display:block;font-size:14px;color:var(--text-secondary);margin-top:4px;line-height:1.65}
 </style>
 </head>
 <body>
@@ -169,7 +175,7 @@ footer a{color:var(--text-secondary)}
 <nav class="toc">
   <strong>학습 경로</strong>
   <ol start="0">
-    <li><a href="#s0">먼저: 볼록 껍질이란?</a></li>
+    <li><a href="#s0">먼저: 논문이 푼 세 문제</a> · <a href="problems.html">보충 페이지</a></li>
     <li><a href="#s1">출력할 칸이 미리 정해져 있다</a></li>
     <li><a href="#s2">정답이 ‘입력의 번호’인 문제들</a></li>
     <li><a href="#s3">어텐션을 섞지 말고 가리키게</a></li>
@@ -183,45 +189,10 @@ footer a{color:var(--text-secondary)}
 </nav>
 
 <!-- ───────── 0 ───────── -->
-<h2 id="s0">0. 먼저: 볼록 껍질이란?</h2>
-<p>이 페이지에서 가장 자주 나오는 예제는 <strong>볼록 껍질(convex hull)</strong>입니다. 평면에 흩어진 점들을 모두 감싸는 <strong>가장 작은 볼록 다각형</strong>을 말합니다.</p>
-<p>판자에 못을 여러 개 박고, 크게 늘린 고무줄을 바깥에 걸었다가 놓는다고 생각해 보세요. 고무줄은 줄어들다가 가장 바깥쪽 못들에 걸려 멈춥니다. 그때 고무줄이 만든 모양이 볼록 껍질입니다.</p>
-
-<div class="demo">
-  <h4>그림 · 고무줄이 걸린 못과 안쪽에 갇힌 못</h4>
-  <p class="cap">초록 선이 고무줄(볼록 껍질)입니다. 진한 초록 점이 꼭짓점이고, 회색 점은 껍질 안쪽에 있어 결과에 영향을 주지 않습니다. 주황 숫자는 출력 순서입니다(⑤는 다각형을 닫으려고 P3을 한 번 더 가리키는 것).</p>
-  <svg class="fig" viewBox="0 0 330 205" width="100%" style="max-width:520px" role="img" aria-label="점 7개와 그 볼록 껍질. P3, P6, P4, P5가 꼭짓점이고 P1, P2, P7은 안쪽에 있다">
-    <polygon points="290,150 150,40 40,120 190,170" style="fill:var(--wash);stroke:var(--s3);stroke-width:2.5;stroke-linejoin:round"/>
-    <g style="fill:var(--s3)">
-      <circle cx="290" cy="150" r="6"/><circle cx="150" cy="40" r="6"/><circle cx="40" cy="120" r="6"/><circle cx="190" cy="170" r="6"/>
-    </g>
-    <g style="fill:var(--muted)">
-      <circle cx="150" cy="120" r="4.5"/><circle cx="205" cy="128" r="4.5"/><circle cx="120" cy="90" r="4.5"/>
-    </g>
-    <g style="fill:var(--text-primary);font:600 12.5px system-ui">
-      <text x="298" y="146">P3</text><text x="158" y="34">P6</text><text x="12" y="116">P4</text><text x="198" y="188">P5</text>
-      <text x="156" y="116">P1</text><text x="211" y="124">P2</text><text x="126" y="86">P7</text>
-    </g>
-    <g style="fill:var(--s2);font:700 11.5px system-ui">
-      <text x="270" y="170">①⑤</text><text x="132" y="34">②</text><text x="36" y="140">③</text><text x="172" y="188">④</text>
-    </g>
-  </svg>
-</div>
-
-<ul>
-  <li><strong>꼭짓점</strong> — 고무줄이 실제로 걸린 바깥쪽 점입니다. 그림에서는 P3, P6, P4, P5입니다.</li>
-  <li><strong>안쪽 점</strong> — 고무줄에 닿지 않는 점입니다. 안쪽 점이 몇 개든, 안에서 어떻게 움직이든 껍질은 그대로입니다.</li>
-  <li><strong>“볼록”</strong> — 움푹 들어간 곳이 없다는 뜻입니다. 다각형 안의 어떤 두 점을 이어도 그 선분이 밖으로 나가지 않습니다. 고무줄은 팽팽하게 당겨지므로 안쪽으로 파고들 수 없습니다.</li>
-</ul>
-
-<p>이 문제의 <strong>입력</strong>은 점들의 좌표이고, <strong>출력</strong>은 껍질 꼭짓점의 번호를 둘레를 따라 적은 것입니다. 같은 껍질이라도 어느 점에서 시작해 어느 방향으로 도느냐에 따라 여러 가지로 적을 수 있어서, 논문은 “껍질 위에서 번호가 가장 작은 점부터 반시계 방향”으로 적고, 마지막에 시작점을 한 번 더 적어 다각형을 닫기로 정했습니다(논문 그림 2(a)). 그림의 답은 이렇게 됩니다.</p>
-<div class="easy">
-  <span class="lbl">그림의 정답 출력</span>
-  <p class="big">⇒ 3 → 6 → 4 → 5 → 3 ⇐</p>
-  <p style="margin:0;font-size:14.5px;color:var(--text-secondary)">⇒와 ⇐는 시작과 끝을 알리는 기호입니다. 입력은 7개인데 꼭짓점은 4개이고, 끝에 시작점 3을 한 번 더 적습니다. 출력 길이는 점이 어떻게 놓였느냐에 따라 매번 달라집니다.</p>
-</div>
-
-<p>Pointer Networks가 이 문제를 첫 과제로 고른 이유는 답의 생김새에 있습니다.</p>
+<h2 id="s0">0. 먼저: 논문이 푼 세 문제</h2>
+<p>이 페이지의 예제는 대부분 <strong>볼록 껍질(convex hull)</strong>입니다. 평면에 흩어진 점들을 모두 감싸는 가장 작은 볼록 다각형이고, 출력은 그 꼭짓점의 번호를 둘레를 따라 적은 것입니다. 논문은 여기에 <strong>들로네 삼각분할</strong>과 <strong>외판원 문제(TSP)</strong>를 더해 세 문제를 풀었습니다. 셋 다 답이 “입력 중 몇 번째 점”의 나열입니다.</p>
+<a class="next" href="problems.html"><small>보충 페이지</small><b>Pointer Networks가 푼 세 문제 →</b><span>볼록 껍질 · 들로네 삼각분할 · 외판원 문제를 같은 점 7개로 그림과 함께 설명합니다. 각 문제의 출력 표기 규칙(예: ⇒ 3 → 6 → 4 → 5 → 3 ⇐), 정답 데이터를 만든 방법, 평가 지표를 정리했습니다. 세 문제가 처음이라면 먼저 읽고 오세요.</span></a>
+<p>세 문제 중 볼록 껍질이 첫 과제로 쓰인 이유는 답의 생김새에 있습니다.</p>
 <ol>
   <li><strong>답에 새로운 값이 하나도 없습니다.</strong> 출력은 모두 “입력 중 몇 번째 점”입니다.</li>
   <li><strong>나올 수 있는 번호의 범위가 입력 개수에 따라 바뀝니다.</strong> 점이 7개면 1~7번, 50개면 1~50번이 답에 나올 수 있습니다.</li>
@@ -265,7 +236,7 @@ footer a{color:var(--text-secondary)}
   <li><strong>들로네 삼각분할</strong> — 어떤 삼각형의 외접원 안에도 다른 점이 없는 삼각분할. 출력은 번호 세 개짜리 묶음의 나열입니다. 예: \(\{\Rightarrow,(1,2,4),(1,4,5),(1,3,5),(1,2,3),\Leftarrow\}\)</li>
   <li><strong>외판원 문제(TSP)</strong> — 모든 도시를 한 번씩 들르고 돌아오는 가장 짧은 경로. NP-hard입니다. 학습용 정답은 \(O(2^n n^2)\)인 Held-Karp 동적 계획법으로 n = 20까지 만들었습니다.</li>
 </ul>
-<p>셋 다 출력에 새로운 값이 하나도 없습니다. 답은 늘 입력 중 무엇을 어떤 순서로 고르느냐입니다. 아래 데모는 같은 점 집합에 볼록 껍질과 TSP를 실제로 풀어서 출력 번호열을 보여 줍니다. TSP 최적해는 논문처럼 Held-Karp로 구합니다.</p>
+<p>세 문제를 그림으로 자세히 보려면 <a href="problems.html">보충 페이지</a>를 참고하세요. 셋 다 출력에 새로운 값이 하나도 없습니다. 답은 늘 입력 중 무엇을 어떤 순서로 고르느냐입니다. 아래 데모는 같은 점 집합에 볼록 껍질과 TSP를 실제로 풀어서 출력 번호열을 보여 줍니다. TSP 최적해는 논문처럼 Held-Karp로 구합니다.</p>
 
 <div class="demo">
   <h4>데모 2 · 같은 입력, 다른 번호열</h4>
@@ -327,7 +298,7 @@ footer a{color:var(--text-secondary)}
 d_i=\mathrm{LSTM}\big(d_{i-1},\;\underbrace{P_{C_{i-1}}}_{\text{직전에 고른 점}}\big)\qquad
 u^i_j=v^\top\tanh(W_1e_j+W_2d_i)\qquad p=\operatorname{softmax}(u^i)$$
 <span class="note">후보 점들의 벡터 \(e_j\)는 처음에 만들어진 뒤 끝까지 그대로입니다. 매 스텝 바뀌는 것은 질의(query) 역할을 하는 디코더 상태 \(d_i\) 하나뿐입니다. 그래서 “직전에 무엇을 골랐느냐에 따라 다음 선택이 달라지는” 효과는 전부 \(d_i\)를 통해 들어옵니다. 학습할 때는 모델이 실제로 고른 점 대신 <strong>정답의 직전 점</strong>을 넣습니다(교사 강요).</span></div>
-<p>0절 그림의 점 7개로 실제 순서를 따라가 봅니다. 후보는 끝 기호 ⇐ 자리까지 8칸입니다. 볼록 껍질은 답의 길이가 입력마다 다르기 때문에, 언제 멈출지도 모델이 골라야 합니다.</p>
+<p><a href="problems.html#hull">보충 페이지 그림 1</a>의 점 7개로 실제 순서를 따라가 봅니다. 정답은 ⇒ 3 → 6 → 4 → 5 → 3 ⇐입니다. 후보는 끝 기호 ⇐ 자리까지 8칸입니다. 볼록 껍질은 답의 길이가 입력마다 다르기 때문에, 언제 멈출지도 모델이 골라야 합니다.</p>
 
 <div class="demo">
   <h4>데모 4 · 볼록 껍질을 한 스텝씩 디코딩하기</h4>
@@ -695,7 +666,7 @@ $('#c3').addEventListener('pointermove',function(e){if(!d3drag)return;d3=d3pt(e)
 $('#c3').addEventListener('pointerup',function(){d3drag=false;});
 
 /* ══════ 데모 4: 한 스텝씩 ══════ */
-// 0절 그림과 같은 좌표(viewBox 330×205). 0번 칸은 끝 기호 ⇐
+// problems.html 그림과 같은 좌표(viewBox 330×205). 0번 칸은 끝 기호 ⇐
 var XY4=[null,[150,120],[205,128],[290,150],[40,120],[190,170],[150,40],[120,90]];
 var NM4=['⇐','P1','P2','P3','P4','P5','P6','P7'];
 var PS4=[[.01,.01,.03,.80,.05,.04,.05,.01],[.02,.02,.06,.01,.03,.05,.78,.03],[.02,.03,.02,.02,.82,.03,.01,.05],
@@ -895,7 +866,7 @@ $('#d7p').oninput=drawD7;
 var QZ=[
  {q:'점 n개의 볼록 껍질을 seq2seq로 풀 때 근본적인 문제는?',o:['LSTM이 좌표를 입력으로 받을 수 없다','출력층의 칸 수가 학습 때 고정돼 n이 바뀌면 출력할 수 없는 번호가 생긴다','볼록 껍질은 정답이 하나가 아니다'],a:1,
   e:'출력 사전 크기 K가 W_o의 모양에 박혀 있습니다. 논문은 그래서 n마다 모델을 따로 학습해야 한다고 지적합니다.'},
- {q:'0절 그림의 볼록 껍질을 디코딩할 때, 안쪽 점 P1·P2·P7은 어떻게 처리되나?',o:['선택된 꼭짓점이 늘어날 때마다 마스크로 하나씩 지워진다','끝까지 후보로 남지만 학습된 점수가 낮아 한 번도 선택되지 않는다','인코더가 미리 걸러 내 후보에 들어가지 않는다'],a:1,
+ {q:'데모 4의 볼록 껍질을 디코딩할 때, 안쪽 점 P1·P2·P7은 어떻게 처리되나?',o:['선택된 꼭짓점이 늘어날 때마다 마스크로 하나씩 지워진다','끝까지 후보로 남지만 학습된 점수가 낮아 한 번도 선택되지 않는다','인코더가 미리 걸러 내 후보에 들어가지 않는다'],a:1,
   e:'마스크는 이미 고른 점만 지웁니다. 안쪽 점은 매 스텝 후보로 남아 있고, 정답에 한 번도 나오지 않는 점이라 모델이 낮은 점수를 주도록 배웠을 뿐입니다.'},
  {q:'Bahdanau 어텐션과 Ptr-Net이 softmax 분포를 쓰는 방식의 차이는?',o:['어텐션은 분포로 인코더 상태를 섞어 문맥 벡터를 만들고, Ptr-Net은 분포 자체를 출력으로 쓴다','Ptr-Net은 softmax 대신 argmax만 쓴다','어텐션은 덧셈형, Ptr-Net은 내적형 점수를 쓴다'],a:0,
   e:'점수 식 u = vᵀtanh(W₁e + W₂d)는 둘이 같습니다. Ptr-Net은 마지막의 가중 평균 단계를 지우고 분포를 그대로 p(C_i | …)로 씁니다.'},
